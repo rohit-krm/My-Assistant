@@ -1,0 +1,101 @@
+:root {
+  --header-bg: #075e54;
+  --accent-bg: #00a884;
+  --chat-canvas: #e8e2d7;
+  --user-bubble: #dcf8c6;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background-color: var(--chat-canvas);
+  font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+}
+
+/* Fixed Viewport Shell: Keeps Header 100% Sticky when Mobile Keyboard Opens */
+#appShell {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100dvh;
+  display: flex;
+  overflow: hidden;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Shaded WhatsApp Wallpaper so elevated bubbles stand out clearly */
+.wa-wallpaper {
+  background-color: var(--chat-canvas);
+  background-image:
+    radial-gradient(rgba(7, 94, 84, 0.075) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(0,0,0,0.025) 0%, rgba(0,0,0,0.06) 100%);
+  background-size: 22px 22px, 100% 100%;
+  transition: background-color 0.25s ease;
+}
+
+/* Elevated Chat Bubbles */
+.bubble-elevated-bot {
+  background: #ffffff;
+  box-shadow: 0 3px 10px -2px rgba(15, 23, 42, 0.13), 0 1px 3px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.bubble-elevated-user {
+  background-color: var(--user-bubble);
+  box-shadow: 0 3px 10px -2px rgba(7, 94, 84, 0.17), 0 1px 3px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.msg-animate { animation: fadeSlideUp 0.22s ease-out forwards; }
+
+/* Smooth Shimmer Skeleton Animation */
+@keyframes shimmerSweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-line {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmerSweep 1.4s infinite linear;
+  border-radius: 6px;
+}
+
+.ai-rich-body b, .ai-rich-body strong { font-weight: 700; color: #0f172a; }
+.ai-rich-body em {
+  display: block;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 0.82em;
+  color: #475569;
+  font-style: italic;
+}
+.ai-heading {
+  display: block;
+  font-weight: 700;
+  font-size: 1.04em;
+  color: #0f172a;
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+
+@keyframes waveDance {
+  0%, 100% { height: 6px; }
+  50% { height: 22px; }
+}
+.wave-bar-active {
+  width: 3.5px;
+  border-radius: 9999px;
+  animation: waveDance 0.7s infinite ease-in-out;
+}
