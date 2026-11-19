@@ -1,7 +1,7 @@
 // =========================================================
 // APNA APPS SCRIPT '/exec' URL YAHAN PASTE KAREIN:
 // =========================================================
-const APPS_SCRIPT_API_URL = "YAHAN_APNA_EXEC_URL_PASTE_KAREIN";
+const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbxOxUN1RcHShfhXOCjyRoXQO8yq_uZ2Ej6FA0TYbYibriV_EJMMdDSOG0CTJjI3vwdj/exec";
 
 const MAX_FILE_BYTES = 30 * 1024 * 1024; // 30 MB Max
 const MAX_PDF_PAGES = 300;              // 300 Pages Max
