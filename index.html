@@ -7,9 +7,11 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>MK Assistant - Acupressure & Vastu</title>
+  <title>Saarthi - आपका ज्ञान एवं उपचार मार्गदर्शक</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PDF.js for client-side PDF page count validation (Max 300 pages) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,6 +21,9 @@
       theme: {
         extend: { fontFamily: { sans: ['"Inter"', '"Noto Sans Devanagari"', 'sans-serif'] } }
       }
+    };
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   </script>
 
@@ -26,7 +31,7 @@
     :root {
       --header-bg: #075e54;
       --accent-bg: #00a884;
-      --chat-canvas: #efeae2;
+      --chat-canvas: #e8e2d7;
       --user-bubble: #dcf8c6;
     }
 
@@ -43,19 +48,46 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* WhatsApp-like subtle wallpaper texture */
+    /* Shaded WhatsApp Wallpaper so elevated bubbles stand out clearly */
     .wa-wallpaper {
       background-color: var(--chat-canvas);
-      background-image: radial-gradient(rgba(0, 0, 0, 0.065) 0.85px, transparent 0.85px);
-      background-size: 20px 20px;
+      background-image:
+        radial-gradient(rgba(7, 94, 84, 0.07) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.05) 100%);
+      background-size: 22px 22px, 100% 100%;
       transition: background-color 0.25s ease;
     }
 
+    /* Elevated 3D-like Chat Bubbles */
+    .bubble-elevated-bot {
+      background: #ffffff;
+      box-shadow: 0 3px 10px -2px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+    }
+
+    .bubble-elevated-user {
+      background-color: var(--user-bubble);
+      box-shadow: 0 3px 10px -2px rgba(7, 94, 84, 0.16), 0 1px 3px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
     @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .msg-animate { animation: fadeSlideUp 0.2s ease-out forwards; }
+    .msg-animate { animation: fadeSlideUp 0.22s ease-out forwards; }
+
+    /* Light Shimmer Animation while AI is preparing reply */
+    @keyframes shimmerSweep {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .shimmer-line {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      animation: shimmerSweep 1.4s infinite linear;
+      border-radius: 6px;
+    }
 
     .ai-rich-body b, .ai-rich-body strong { font-weight: 700; color: #0f172a; }
     .ai-rich-body em {
@@ -75,11 +107,15 @@
       margin-top: 8px;
       margin-bottom: 2px;
     }
-    .wave-bar {
+
+    @keyframes waveDance {
+      0%, 100% { height: 6px; }
+      50% { height: 22px; }
+    }
+    .wave-bar-active {
       width: 3.5px;
-      height: 6px;
       border-radius: 9999px;
-      transition: height 0.08s ease;
+      animation: waveDance 0.7s infinite ease-in-out;
     }
   </style>
 </head>
@@ -91,15 +127,20 @@
   <!-- LEFT SIDEBAR -->
   <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
     
-    <!-- Brand Header -->
+    <!-- Saarthi Brand Header with Custom SVG Logo -->
     <div class="h-16 px-5 border-b border-slate-100 flex items-center justify-between shrink-0">
-      <div class="flex items-center gap-2.5">
-        <div id="brandLogoBox" class="w-9 h-9 rounded-xl text-white flex items-center justify-center shadow-xs" style="background-color: var(--header-bg);">
-          <i data-lucide="sparkles" class="w-5 h-5"></i>
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm shrink-0" style="background: linear-gradient(135deg, #075e54 0%, #0d9488 100%);">
+          <!-- Custom Saarthi Chariot-Wheel / Compass SVG Icon -->
+          <svg class="w-6 h-6 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+            <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/>
+          </svg>
         </div>
         <div>
-          <h1 class="font-bold text-slate-900 text-base leading-tight">MK Assistant</h1>
-          <p class="text-[11px] text-slate-500 font-medium">विशेषज्ञ सलाहकार प्रणाली</p>
+          <h1 class="font-bold text-slate-900 text-lg leading-tight tracking-tight">Saarthi</h1>
+          <p class="text-[11px] text-slate-500 font-medium">ज्ञान एवं उपचार मार्गदर्शक</p>
         </div>
       </div>
       <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg">
@@ -116,14 +157,6 @@
         </div>
         <div id="assistantList" class="space-y-1.5"></div>
       </div>
-    </div>
-
-    <!-- Install App Banner inside Sidebar -->
-    <div id="sidebarInstallWrap" class="px-3.5 pb-2">
-      <button type="button" onclick="triggerInstallApp()" class="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-xs">
-        <i data-lucide="smartphone" class="w-4 h-4 text-emerald-400"></i>
-        <span>ऐप इंस्टॉल करें (Install App)</span>
-      </button>
     </div>
 
     <!-- Backend Status & User Footer -->
@@ -151,12 +184,12 @@
     </div>
   </aside>
 
-  <!-- MAIN WORKSPACE (Full Height Flex Column) -->
+  <!-- MAIN WORKSPACE -->
   <main class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden relative">
     
-    <!-- FILLED COLORED HEADER (Changes Dynamically per Selected Assistant) -->
+    <!-- FILLED COLORED HEADER -->
     <header id="mainAppHeader" class="text-white z-20 shrink-0 shadow-md transition-colors duration-300" style="background-color: var(--header-bg);">
-      <div class="h-15 py-2.5 px-3 lg:px-6 flex items-center justify-between gap-2.5">
+      <div class="py-2.5 px-3 lg:px-6 flex items-center justify-between gap-2.5">
         <div class="flex items-center gap-2.5 min-w-0">
           <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-1 text-white/90 hover:bg-white/15 rounded-xl">
             <i data-lucide="menu" class="w-5 h-5"></i>
@@ -175,7 +208,7 @@
           </div>
         </div>
 
-        <!-- Right Utility Controls -->
+        <!-- Right Menu -->
         <div class="flex items-center gap-1.5 shrink-0">
           <div class="hidden sm:flex items-center bg-black/20 rounded-xl p-1 border border-white/15">
             <button onclick="changeFontSize(-1)" class="px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/15 rounded-lg">A-</button>
@@ -187,7 +220,7 @@
             <button onclick="toggleHeaderMenu()" id="headerMenuBtn" class="p-2 text-white hover:bg-white/15 rounded-full">
               <i data-lucide="more-vertical" class="w-5 h-5"></i>
             </button>
-            <div id="headerDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
+            <div id="headerDropdown" class="hidden absolute right-0 mt-2 w-60 bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
               <div class="sm:hidden px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
                 <span class="text-xs font-medium text-slate-600">अक्षर आकार</span>
                 <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
@@ -196,9 +229,13 @@
                   <button onclick="changeFontSize(1)" class="px-2 py-1 text-xs font-semibold">A+</button>
                 </div>
               </div>
-              <button onclick="triggerInstallApp()" class="w-full px-4 py-2.5 text-left text-sm text-emerald-700 font-semibold hover:bg-emerald-50 flex items-center gap-2.5">
-                <i data-lucide="download-cloud" class="w-4 h-4"></i>
-                <span>ऐप इंस्टॉल करें (Home Screen)</span>
+              <!-- Single Subtle App Install Option -->
+              <button id="menuInstallBtn" onclick="triggerInstallApp()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center justify-between">
+                <span class="flex items-center gap-2.5">
+                  <i data-lucide="smartphone" class="w-4 h-4 text-slate-500"></i>
+                  <span id="menuInstallText">ऐप इंस्टॉल करें</span>
+                </span>
+                <span id="menuInstallTag" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">App</span>
               </button>
               <button onclick="clearCurrentChat()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
                 <i data-lucide="trash-2" class="w-4 h-4 text-slate-400"></i>
@@ -218,7 +255,7 @@
         </div>
       </div>
 
-      <!-- Subtle Mode Pills Sub-Bar inside Colored Header -->
+      <!-- Mode Pills Sub-Bar -->
       <div class="px-3 lg:px-6 py-2 bg-black/15 border-t border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
         <span class="text-[11px] font-semibold text-white/75 shrink-0 flex items-center gap-1">
           <i data-lucide="sliders-horizontal" class="w-3 h-3"></i> मोड:
@@ -227,50 +264,80 @@
       </div>
     </header>
 
-    <!-- WHATSAPP-STYLE CHAT MESSAGES CANVAS -->
+    <!-- ELEVATED WHATSAPP CHAT CANVAS -->
     <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto no-scrollbar wa-wallpaper px-3.5 lg:px-8 py-4 scroll-smooth">
-      <div id="messagesWrapper" class="max-w-3xl mx-auto space-y-3.5 pb-2"></div>
+      <div id="messagesWrapper" class="max-w-3xl mx-auto space-y-4 pb-2"></div>
     </div>
 
-    <!-- FIXED CLEAN WHATSAPP BOTTOM INPUT BAR -->
-    <div class="wa-wallpaper px-2.5 lg:px-8 pb-3 pt-1.5 shrink-0 z-20">
+    <!-- WHATSAPP-STYLE BOTTOM INPUT BAR (Emoji Left | Text | Image + Doc Right | Mic/Send) -->
+    <div class="wa-wallpaper px-2.5 lg:px-8 pb-3 pt-1.5 shrink-0 z-20 relative">
       <div class="max-w-3xl mx-auto">
-        <!-- Image Attachment Preview -->
-        <div id="attachmentPreview" class="hidden mb-2 p-2 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-xs">
-          <div class="flex items-center gap-2.5">
-            <img id="attachmentThumb" src="" class="w-10 h-10 rounded-xl object-cover border border-slate-200" alt="Preview">
-            <span id="attachmentName" class="text-xs font-semibold text-slate-700">image.jpg</span>
+        
+        <!-- Quick Emoji / Greeting Tray -->
+        <div id="emojiPickerTray" class="hidden mb-2 p-2 bg-white rounded-2xl shadow-lg border border-slate-200 flex items-center justify-around gap-1">
+          <button type="button" onclick="insertQuickEmoji('🙏 प्रणाम! ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🙏</button>
+          <button type="button" onclick="insertQuickEmoji('🌿 ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🌿</button>
+          <button type="button" onclick="insertQuickEmoji('🧭 ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🧭</button>
+          <button type="button" onclick="insertQuickEmoji('👍 ठीक है ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">👍</button>
+          <button type="button" onclick="insertQuickEmoji('धन्यवाद 🙏')" class="text-xs font-semibold px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700">धन्यवाद</button>
+        </div>
+
+        <!-- Attached Image / PDF Preview Strip -->
+        <div id="attachmentPreview" class="hidden mb-2 p-2.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <img id="attachmentThumb" src="" class="hidden w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0" alt="Preview">
+            <div id="attachmentDocIcon" class="hidden w-10 h-10 rounded-xl bg-rose-50 text-rose-600 items-center justify-center shrink-0">
+              <i data-lucide="file-text" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <p id="attachmentName" class="text-xs font-semibold text-slate-800 truncate">file.pdf</p>
+              <p id="attachmentMeta" class="text-[11px] text-slate-500">Ready to send</p>
+            </div>
           </div>
-          <button type="button" onclick="removeAttachment()" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-full">
+          <button type="button" onclick="removeAttachment()" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-full shrink-0">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
 
         <div class="flex items-end gap-2">
-          <!-- White Rounded Input Capsule -->
-          <div class="flex-1 flex items-center bg-white rounded-3xl px-2.5 py-1 shadow-sm border border-black/5 min-h-[48px]">
-            <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+          <!-- White WhatsApp Input Capsule -->
+          <div class="flex-1 flex items-center bg-white rounded-3xl px-2 py-1 shadow-md border border-black/5 min-h-[48px]">
             
-            <button type="button" id="attachBtn" onclick="document.getElementById('fileInput').click()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full shrink-0" title="चित्र संलग्न करें">
-              <i data-lucide="paperclip" class="w-5 h-5"></i>
+            <!-- Left: Emoji Button (WhatsApp style) -->
+            <button type="button" id="emojiBtn" onclick="toggleEmojiTray()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full shrink-0" title="इमोजी / अभिवादन">
+              <i data-lucide="smile" class="w-5 h-5"></i>
             </button>
 
+            <!-- Textarea -->
             <textarea 
               id="messageInput" 
               rows="1" 
               placeholder="लक्षण या समस्या यहाँ लिखें..." 
-              class="w-full bg-transparent border-0 resize-none py-2 px-1.5 text-slate-900 placeholder-slate-400 text-base max-h-28 leading-snug outline-none no-scrollbar select-text"
+              class="w-full bg-transparent border-0 resize-none py-2 px-1 text-slate-900 placeholder-slate-400 text-base max-h-28 leading-snug outline-none no-scrollbar select-text"
               oninput="onInputTextChanged(this)"
               onkeydown="handleKeyDown(event)"
             ></textarea>
 
-            <!-- Live Horizontal Audio Wave Box -->
+            <!-- Live Voice Wave Box (Shown while speaking) -->
             <div id="voiceWaveBox" class="hidden flex-1 items-center justify-between gap-2 px-1.5 py-1">
               <button type="button" onclick="cancelVoiceRecording()" class="p-1.5 rounded-full bg-rose-100 text-rose-600 shrink-0" title="रद्द करें">
                 <i data-lucide="x" class="w-4 h-4"></i>
               </button>
               <div id="waveBarsContainer" class="flex-1 flex items-center justify-center gap-1 h-7 overflow-hidden"></div>
-              <span id="voiceLiveLabel" class="text-xs font-semibold text-rose-600 whitespace-nowrap shrink-0">● सुन रहा हूँ...</span>
+              <span id="voiceLiveLabel" class="text-xs font-semibold text-rose-600 whitespace-nowrap shrink-0">● बोलिए...</span>
+            </div>
+
+            <!-- Right Side inside Input Capsule: 1) Image Attach & 2) PDF/Doc Attach -->
+            <div id="rightAttachGroup" class="flex items-center gap-0.5 shrink-0">
+              <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleAttachmentSelected(event, 'image')">
+              <input type="file" id="docInput" accept="application/pdf,.pdf" class="hidden" onchange="handleAttachmentSelected(event, 'pdf')">
+
+              <button type="button" onclick="document.getElementById('docInput').click()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full" title="PDF फ़ाइल संलग्न करें (Max 30MB, 300 Pages)">
+                <i data-lucide="paperclip" class="w-5 h-5"></i>
+              </button>
+              <button type="button" onclick="document.getElementById('imageInput').click()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full" title="फ़ोटो / चित्र संलग्न करें (Max 30MB)">
+                <i data-lucide="camera" class="w-5 h-5"></i>
+              </button>
             </div>
           </div>
 
@@ -288,7 +355,7 @@
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
       <div class="flex items-center gap-2 text-slate-900">
         <i data-lucide="lock" class="w-5 h-5 text-emerald-700"></i>
-        <h3 class="text-lg font-bold">सुरक्षित प्रवेश</h3>
+        <h3 class="text-lg font-bold">Saarthi — सुरक्षित प्रवेश</h3>
       </div>
       <p class="text-xs text-slate-500">कृपया अपना नाम और सुरक्षा एक्सेस पिन दर्ज करें।</p>
       <input type="text" id="authNameInput" placeholder="आपका नाम (उदा. M.K. Maurya)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-600 select-text">
@@ -309,20 +376,36 @@
     // =========================================================
     const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbxOxUN1RcHShfhXOCjyRoXQO8yq_uZ2Ej6FA0TYbYibriV_EJMMdDSOG0CTJjI3vwdj/exec";
 
-    // Dynamic PWA Manifest & Service Worker Setup (So Android Chrome allows Install App!)
-    (function setupPWA() {
-      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#075e54"/><text x="50%" y="56%" font-size="250" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="bold">MK</text></svg>`;
+    const MAX_FILE_BYTES = 30 * 1024 * 1024; // 30 MB Limit
+    const MAX_PDF_PAGES = 300;              // 300 Pages Limit
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+    // 1. Custom Saarthi App Icon & PWA Manifest Setup
+    (function setupSaarthiPWA() {
+      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#075e54"/><stop offset="100%" stop-color="#0d9488"/></linearGradient></defs>
+        <rect width="512" height="512" rx="115" fill="url(#g)"/>
+        <circle cx="256" cy="256" r="155" fill="none" stroke="#fcd34d" stroke-width="24"/>
+        <circle cx="256" cy="256" r="34" fill="#fcd34d"/>
+        <path d="M256 101v65M256 346v65M101 256h65M346 256h65M146 146l46 46M320 320l46 46M366 146l-46 46M192 320l-46 46" stroke="#fcd34d" stroke-width="20" stroke-linecap="round"/>
+      </svg>`;
       const iconUrl = "data:image/svg+xml;base64," + btoa(iconSvg);
+
+      const appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      appleIcon.href = iconUrl;
+      document.head.appendChild(appleIcon);
+
       const manifest = {
-        name: "MK Assistant - Acupressure & Vastu",
-        short_name: "MK Assistant",
-        start_url: window.location.href,
+        name: "Saarthi - ज्ञान एवं उपचार मार्गदर्शक",
+        short_name: "Saarthi",
+        start_url: window.location.origin + window.location.pathname,
         display: "standalone",
-        background_color: "#efeae2",
+        background_color: "#e8e2d7",
         theme_color: "#075e54",
         icons: [
-          { src: iconUrl, sizes: "192x192", type: "image/svg+xml" },
-          { src: iconUrl, sizes: "512x512", type: "image/svg+xml" }
+          { src: iconUrl, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+          { src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
         ]
       };
       const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
@@ -333,53 +416,88 @@
     })();
 
     let deferredInstallPrompt = null;
+    function isAppAlreadyInstalled() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true ||
+             localStorage.getItem('saarthi_installed') === 'true';
+    }
+
+    function updateInstallMenuState() {
+      const txtEl = document.getElementById('menuInstallText');
+      const tagEl = document.getElementById('menuInstallTag');
+      if (!txtEl || !tagEl) return;
+      if (isAppAlreadyInstalled()) {
+        txtEl.textContent = 'ऐप इंस्टॉल है';
+        tagEl.textContent = 'Installed ✓';
+        tagEl.className = 'text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold';
+      } else {
+        txtEl.textContent = 'ऐप इंस्टॉल करें';
+        tagEl.textContent = 'Install';
+        tagEl.className = 'text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium';
+      }
+    }
+
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
+      updateInstallMenuState();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      localStorage.setItem('saarthi_installed', 'true');
+      deferredInstallPrompt = null;
+      updateInstallMenuState();
+      showToast('Saarthi ऐप सफलतापूर्वक इंस्टॉल हो गया!');
     });
 
     function triggerInstallApp() {
       document.getElementById('headerDropdown').classList.add('hidden');
+      if (isAppAlreadyInstalled()) {
+        showToast('Saarthi ऐप पहले से आपके फ़ोन में इंस्टॉल है ✓');
+        return;
+      }
       if (deferredInstallPrompt) {
         deferredInstallPrompt.prompt();
-        deferredInstallPrompt.userChoice.then(() => { deferredInstallPrompt = null; });
+        deferredInstallPrompt.userChoice.then((choice) => {
+          if (choice.outcome === 'accepted') {
+            localStorage.setItem('saarthi_installed', 'true');
+            updateInstallMenuState();
+          }
+          deferredInstallPrompt = null;
+        });
       } else {
-        alert("ऐप इंस्टॉल करने के लिए Chrome के ऊपर दाईं ओर (⋮) मेनू पर क्लिक करें और 'Add to Home screen' या 'Install app' चुनें।");
+        alert("इंस्टॉल करने के लिए ब्राउज़र के ऊपर दाईं ओर (⋮) मेनू दबाएं और 'Add to Home screen' या 'Install app' चुनें।");
       }
     }
 
-    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    // App State
     let currentFontSize = Number(localStorage.getItem('gyanhub_font')) || 17;
     let allAssistants = [];
     let allModes = [];
     let activeAssistant = null;
     let activeModeId = null;
-    let pendingImage = null;
+    let pendingAttachment = null; // { kind: 'image'|'pdf', mimeType, base64, previewUrl, fileName, metaText }
 
+    // Voice Recognition State (No getUserMedia conflict!)
     let isRecordingVoice = false;
     let recognition = null;
-    let audioContext = null;
-    let analyserNode = null;
-    let micStream = null;
-    let waveAnimFrame = null;
     let capturedVoiceText = "";
 
-    // WhatsApp + Assistant Specific Color Palettes
     const ASSISTANT_PALETTES = {
       'ACU': {
-        headerBg: '#075e54',      // Classic WhatsApp Teal Green
-        accentBg: '#00a884',      // WhatsApp Send Green
-        chatCanvas: '#efeae2',    // Classic WhatsApp Wallpaper Beige
-        userBubble: '#dcf8c6',    // Classic WhatsApp Outgoing Green
+        headerBg: '#075e54',
+        accentBg: '#00a884',
+        chatCanvas: '#e8e2d7',
+        userBubble: '#dcf8c6',
         chipBg: 'bg-emerald-50 text-emerald-900 border-emerald-200',
         sideActive: 'bg-emerald-50 border-emerald-200',
         sideBadge: 'bg-emerald-700'
       },
       'VASTU': {
-        headerBg: '#9a3412',      // Rich Vastu Terracotta / Saffron
-        accentBg: '#c2410c',      // Warm Saffron Button
-        chatCanvas: '#f6efe9',    // Warm Sandalwood Wallpaper
-        userBubble: '#ffedd5',    // Soft Warm Outgoing Bubble
+        headerBg: '#9a3412',
+        accentBg: '#c2410c',
+        chatCanvas: '#f3ebe3',
+        userBubble: '#ffedd5',
         chipBg: 'bg-amber-50 text-amber-900 border-amber-200',
         sideActive: 'bg-amber-50 border-amber-200',
         sideBadge: 'bg-amber-700'
@@ -391,7 +509,7 @@
       return ASSISTANT_PALETTES[key] || {
         headerBg: '#1e3a8a',
         accentBg: '#2563eb',
-        chatCanvas: '#eef2f6',
+        chatCanvas: '#e6ecf2',
         userBubble: '#dbeafe',
         chipBg: 'bg-blue-50 text-blue-900 border-blue-200',
         sideActive: 'bg-blue-50 border-blue-200',
@@ -401,6 +519,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       updateFontDisplay();
+      updateInstallMenuState();
       buildWaveBars();
       checkLogin();
       fetchBootstrapData();
@@ -415,10 +534,11 @@
     function buildWaveBars() {
       const c = document.getElementById('waveBarsContainer');
       c.innerHTML = '';
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 18; i++) {
         const b = document.createElement('div');
-        b.className = 'wave-bar';
+        b.className = 'wave-bar-active';
         b.style.backgroundColor = 'var(--accent-bg)';
+        b.style.animationDelay = `${(i % 5) * 0.12}s`;
         c.appendChild(b);
       }
     }
@@ -594,11 +714,11 @@
 
       let html = `
         <div class="flex justify-center">
-          <span class="px-3 py-1 rounded-lg bg-white/90 text-slate-600 text-[11px] font-semibold shadow-2xs">आज</span>
+          <span class="px-3 py-1 rounded-lg bg-white/95 text-slate-600 text-[11px] font-semibold shadow-xs">आज</span>
         </div>
         <div class="flex justify-start msg-animate">
-          <div class="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tl-xs px-4 py-3 bg-white text-slate-800 shadow-xs">
-            <div style="font-size:${currentFontSize}px">${escapeHtml(ast.welcomeMsg || 'प्रणाम! मैं आपकी क्या सहायता कर सकता हूँ?')}</div>
+          <div class="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tl-xs px-4 py-3 text-slate-800 bubble-elevated-bot">
+            <div style="font-size:${currentFontSize}px">${escapeHtml(ast.welcomeMsg || 'प्रणाम! मैं Saarthi, आपकी क्या सहायता कर सकता हूँ?')}</div>
           </div>
         </div>`;
 
@@ -607,7 +727,7 @@
         if (msg.role === 'user') {
           html += `
             <div class="flex justify-end msg-animate">
-              <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs px-4 py-2.5 text-slate-900 shadow-xs" style="background-color: var(--user-bubble);">
+              <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs px-4 py-2.5 text-slate-900 bubble-elevated-user">
                 <p class="leading-relaxed whitespace-pre-wrap select-text" style="font-size:${currentFontSize}px">${escapeHtml(msg.text)}</p>
                 <div class="mt-1 flex items-center justify-end gap-1 text-[10.5px] text-slate-500">
                   <span>${timeStr}</span>
@@ -621,7 +741,7 @@
           const msgId = 'msg_' + msg.timestamp + '_' + idx;
           html += `
             <div class="flex justify-start msg-animate">
-              <div class="max-w-[92%] sm:max-w-[82%] rounded-2xl rounded-tl-xs px-4 py-3 bg-white text-slate-800 shadow-xs">
+              <div class="max-w-[92%] sm:max-w-[82%] rounded-2xl rounded-tl-xs px-4 py-3 text-slate-800 bubble-elevated-bot">
                 ${msg.modeLabel ? `<div class="mb-1.5 inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-semibold">${escapeHtml(msg.modeLabel)}</div>` : ''}
                 <div id="${msgId}" class="ai-rich-body leading-relaxed whitespace-pre-wrap select-text" style="font-size:${currentFontSize}px">${formatRichText(msg.text)}</div>
                 ${sugs.length > 0 ? `
@@ -644,6 +764,18 @@
       scrollToBottom();
     }
 
+    // Emoji Tray
+    function toggleEmojiTray() {
+      document.getElementById('emojiPickerTray').classList.toggle('hidden');
+    }
+    function insertQuickEmoji(str) {
+      const inp = document.getElementById('messageInput');
+      inp.value = inp.value + str;
+      document.getElementById('emojiPickerTray').classList.add('hidden');
+      onInputTextChanged(inp);
+      inp.focus();
+    }
+
     function updatePrimaryActionBtn() {
       const btn = document.getElementById('primaryActionBtn');
       const icon = document.getElementById('primaryActionIcon');
@@ -659,9 +791,9 @@
       btn.classList.remove('animate-pulse');
       btn.style.backgroundColor = 'var(--accent-bg)';
       const hasText = document.getElementById('messageInput').value.trim().length > 0;
-      const hasImg = pendingImage !== null;
+      const hasFile = pendingAttachment !== null;
 
-      icon.setAttribute('data-lucide', (hasText || hasImg) ? 'send-horizontal' : 'mic');
+      icon.setAttribute('data-lucide', (hasText || hasFile) ? 'send-horizontal' : 'mic');
       lucide.createIcons();
     }
 
@@ -674,88 +806,94 @@
     function handlePrimaryActionClick() {
       if (isRecordingVoice) { finishVoiceRecording(); return; }
       const hasText = document.getElementById('messageInput').value.trim().length > 0;
-      if (hasText || pendingImage) sendChatQuery();
+      if (hasText || pendingAttachment) sendChatQuery();
       else startVoiceRecording();
     }
 
     function handleKeyDown(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        if (document.getElementById('messageInput').value.trim() || pendingImage) sendChatQuery();
+        if (document.getElementById('messageInput').value.trim() || pendingAttachment) sendChatQuery();
       }
     }
 
-    async function startVoiceRecording() {
+    // FIXED Android Speech-to-Text (Exclusive Mic Access — No getUserMedia Conflict!)
+    function startVoiceRecording() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) { showToast('इस ब्राउज़र में वॉइस टाइपिंग उपलब्ध नहीं है'); return; }
+      if (!SpeechRecognition) {
+        showToast('इस ब्राउज़र में वॉइस टाइपिंग उपलब्ध नहीं है');
+        return;
+      }
 
       capturedVoiceText = "";
       isRecordingVoice = true;
+
+      document.getElementById('emojiPickerTray').classList.add('hidden');
       document.getElementById('messageInput').classList.add('hidden');
-      document.getElementById('attachBtn').classList.add('hidden');
+      document.getElementById('emojiBtn').classList.add('hidden');
+      document.getElementById('rightAttachGroup').classList.add('hidden');
       document.getElementById('voiceWaveBox').classList.remove('hidden');
       document.getElementById('voiceWaveBox').classList.add('flex');
+      document.getElementById('voiceLiveLabel').textContent = '● सुन रहा हूँ...';
       updatePrimaryActionBtn();
-
-      try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const src = audioContext.createMediaStreamSource(micStream);
-        analyserNode = audioContext.createAnalyser();
-        analyserNode.fftSize = 64;
-        src.connect(analyserNode);
-
-        const bars = document.querySelectorAll('#waveBarsContainer .wave-bar');
-        const dataArr = new Uint8Array(analyserNode.frequencyBinCount);
-        function drawWave() {
-          if (!isRecordingVoice || !analyserNode) return;
-          analyserNode.getByteFrequencyData(dataArr);
-          bars.forEach((b, i) => {
-            const h = Math.max(5, Math.min(26, Math.round(((dataArr[i % dataArr.length] || 0) / 255) * 26)));
-            b.style.height = h + 'px';
-          });
-          waveAnimFrame = requestAnimationFrame(drawWave);
-        }
-        drawWave();
-      } catch (e) {}
 
       try {
         recognition = new SpeechRecognition();
         recognition.lang = 'hi-IN';
-        recognition.continuous = true;
+        recognition.continuous = false;
         recognition.interimResults = true;
+
         recognition.onresult = (ev) => {
-          let txt = '';
-          for (let i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
-          capturedVoiceText = txt.trim();
-          if (capturedVoiceText) document.getElementById('voiceLiveLabel').textContent = '✓ ' + capturedVoiceText.slice(-15);
-        };
-        recognition.onerror = (ev) => {
-          if (ev.error === 'not-allowed') {
-            alert('कृपया ब्राउज़र में माइक्रोफ़ोन की अनुमति (Allow) दें।');
-            cancelVoiceRecording();
+          let transcript = '';
+          for (let i = 0; i < ev.results.length; i++) {
+            transcript += ev.results[i][0].transcript;
+          }
+          capturedVoiceText = transcript.trim();
+          if (capturedVoiceText) {
+            document.getElementById('voiceLiveLabel').textContent = '✓ ' + capturedVoiceText.slice(-18);
           }
         };
+
+        recognition.onerror = (ev) => {
+          if (ev.error === 'not-allowed') {
+            alert('कृपया ब्राउज़र सेटिंग में माइक्रोफ़ोन की अनुमति (Allow) दें।');
+          } else if (ev.error !== 'aborted') {
+            showToast('आवाज़ स्पष्ट नहीं मिली, पुनः प्रयास करें');
+          }
+          stopVoiceUI();
+          updatePrimaryActionBtn();
+        };
+
+        recognition.onend = () => {
+          // Auto-commit captured text when user finishes speaking
+          if (isRecordingVoice) {
+            finishVoiceRecording();
+          }
+        };
+
         recognition.start();
-      } catch (e) { cancelVoiceRecording(); }
+      } catch (e) {
+        stopVoiceUI();
+        updatePrimaryActionBtn();
+      }
     }
 
-    function stopVoiceHardware() {
+    function stopVoiceUI() {
       isRecordingVoice = false;
-      if (waveAnimFrame) cancelAnimationFrame(waveAnimFrame);
-      if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; }
-      if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-      if (audioContext) { try { audioContext.close(); } catch (e) {} audioContext = null; }
-
       document.getElementById('voiceWaveBox').classList.add('hidden');
       document.getElementById('voiceWaveBox').classList.remove('flex');
-      document.getElementById('attachBtn').classList.remove('hidden');
+      document.getElementById('emojiBtn').classList.remove('hidden');
+      document.getElementById('rightAttachGroup').classList.remove('hidden');
       document.getElementById('messageInput').classList.remove('hidden');
     }
 
     function finishVoiceRecording() {
       const spoken = capturedVoiceText;
-      stopVoiceHardware();
+      if (recognition) {
+        try { recognition.abort(); } catch (e) {}
+        recognition = null;
+      }
+      stopVoiceUI();
       if (spoken) {
         const inp = document.getElementById('messageInput');
         inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + spoken;
@@ -767,10 +905,127 @@
 
     function cancelVoiceRecording() {
       capturedVoiceText = "";
-      stopVoiceHardware();
+      if (recognition) {
+        try { recognition.abort(); } catch (e) {}
+        recognition = null;
+      }
+      stopVoiceUI();
       updatePrimaryActionBtn();
     }
 
+    // Image & PDF Attachment with 30MB Size Limit & 300-Page PDF Limit
+    async function handleAttachmentSelected(e, kind) {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+
+      // 1. Check 30 MB Size Limit
+      if (file.size > MAX_FILE_BYTES) {
+        alert(`फ़ाइल का आकार ${(file.size / (1024 * 1024)).toFixed(1)} MB है। अधिकतम 30 MB तक की फ़ाइल ही संलग्न की जा सकती है।`);
+        return;
+      }
+
+      if (kind === 'image') {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_DIM = 1280;
+            let w = img.width, h = img.height;
+            if (w > h && w > MAX_DIM) { h = Math.round((h * MAX_DIM) / w); w = MAX_DIM; }
+            else if (h > MAX_DIM) { w = Math.round((w * MAX_DIM) / h); h = MAX_DIM; }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+            pendingAttachment = {
+              kind: 'image',
+              mimeType: 'image/jpeg',
+              base64: dataUrl.split(',')[1],
+              previewUrl: dataUrl,
+              fileName: file.name,
+              metaText: `Image • ${(file.size / 1024).toFixed(0)} KB`
+            };
+            showAttachmentPreview();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+
+      } else if (kind === 'pdf') {
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+          alert('कृपया केवल PDF फ़ाइल चुनें।');
+          return;
+        }
+
+        showToast('PDF की जाँच हो रही है...');
+        const arrayBuffer = await file.arrayBuffer();
+
+        // 2. Check Max 300 Pages Limit using PDF.js
+        let pageCount = 0;
+        if (window.pdfjsLib) {
+          try {
+            const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+            pageCount = pdfDoc.numPages;
+            if (pageCount > MAX_PDF_PAGES) {
+              alert(`इस PDF में ${pageCount} पेज हैं। अधिकतम ${MAX_PDF_PAGES} पेज तक की PDF ही अनुमत है।`);
+              return;
+            }
+          } catch (pdfErr) {
+            console.warn('PDF page check skipped:', pdfErr);
+          }
+        }
+
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const base64Str = ev.target.result.split(',')[1];
+          const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+          pendingAttachment = {
+            kind: 'pdf',
+            mimeType: 'application/pdf',
+            base64: base64Str,
+            previewUrl: null,
+            fileName: file.name,
+            metaText: `PDF${pageCount ? ' • ' + pageCount + ' Pages' : ''} • ${sizeMb} MB`
+          };
+          showAttachmentPreview();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function showAttachmentPreview() {
+      if (!pendingAttachment) return;
+      const bar = document.getElementById('attachmentPreview');
+      const thumb = document.getElementById('attachmentThumb');
+      const docIcon = document.getElementById('attachmentDocIcon');
+
+      document.getElementById('attachmentName').textContent = pendingAttachment.fileName;
+      document.getElementById('attachmentMeta').textContent = pendingAttachment.metaText;
+
+      if (pendingAttachment.kind === 'image') {
+        thumb.src = pendingAttachment.previewUrl;
+        thumb.classList.remove('hidden');
+        docIcon.classList.add('hidden');
+        docIcon.classList.remove('flex');
+      } else {
+        thumb.classList.add('hidden');
+        docIcon.classList.remove('hidden');
+        docIcon.classList.add('flex');
+      }
+
+      bar.classList.remove('hidden');
+      updatePrimaryActionBtn();
+    }
+
+    function removeAttachment() {
+      pendingAttachment = null;
+      document.getElementById('attachmentPreview').classList.add('hidden');
+      updatePrimaryActionBtn();
+    }
+
+    // Send Query with Light Shimmer Loading Animation
     function sendSuggested(q) {
       document.getElementById('messageInput').value = q;
       sendChatQuery();
@@ -779,8 +1034,8 @@
     function sendChatQuery() {
       const inp = document.getElementById('messageInput');
       const text = inp.value.trim();
-      const imgObj = pendingImage;
-      if (!text && !imgObj) return;
+      const attObj = pendingAttachment;
+      if (!text && !attObj) return;
 
       const ast = activeAssistant;
       const p = getPalette(ast.id);
@@ -793,8 +1048,9 @@
         timeAgo: Math.max(1, Math.floor((Date.now() - m.timestamp) / 60000)) + ' mins ago'
       }));
 
-      const displayUserTxt = text || '📷 संलग्न चित्र का विश्लेषण करें';
-      saveMessage(ast.id, 'user', imgObj ? `[📷 चित्र] ${displayUserTxt}` : displayUserTxt, modeLabel, []);
+      const prefixIcon = attObj ? (attObj.kind === 'pdf' ? `[📄 ${attObj.fileName}] ` : `[📷 चित्र] `) : '';
+      const displayUserTxt = prefixIcon + (text || 'संलग्न दस्तावेज़ का विश्लेषण करें');
+      saveMessage(ast.id, 'user', displayUserTxt, modeLabel, []);
 
       inp.value = '';
       inp.style.height = 'auto';
@@ -802,19 +1058,29 @@
       updatePrimaryActionBtn();
       renderChatMessages(ast, p);
 
+      // Show Smooth Light Shimmer Loader Card (Prevents Freeze Feel)
       const wrapper = document.getElementById('messagesWrapper');
-      const typingEl = document.createElement('div');
-      typingEl.id = 'typingBubble';
-      typingEl.className = 'flex justify-start msg-animate';
-      typingEl.innerHTML = `<div class="bg-white rounded-2xl px-4 py-3 text-xs text-slate-500 italic shadow-xs">${(mObj && mObj.thinkingText) || '⟳ उत्तर तैयार हो रहा है...'}</div>`;
-      wrapper.appendChild(typingEl);
+      const loaderEl = document.createElement('div');
+      loaderEl.id = 'shimmerLoaderCard';
+      loaderEl.className = 'flex justify-start msg-animate';
+      loaderEl.innerHTML = `
+        <div class="w-[82%] sm:w-[68%] rounded-2xl rounded-tl-xs p-4 bubble-elevated-bot space-y-2.5">
+          <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+            <span class="w-2 h-2 rounded-full animate-ping" style="background-color: var(--accent-bg);"></span>
+            <span>${(mObj && mObj.thinkingText) || 'Saarthi उत्तर तैयार कर रहा है...'}</span>
+          </div>
+          <div class="h-3 w-11/12 shimmer-line"></div>
+          <div class="h-3 w-4/5 shimmer-line"></div>
+          <div class="h-3 w-3/5 shimmer-line"></div>
+        </div>`;
+      wrapper.appendChild(loaderEl);
       scrollToBottom();
 
       const payload = {
         assistantId: ast.id,
         modeId: activeModeId,
         query: text,
-        imageData: imgObj ? { mimeType: imgObj.mimeType, base64: imgObj.base64 } : null,
+        attachmentData: attObj ? { mimeType: attObj.mimeType, base64: attObj.base64, fileName: attObj.fileName } : null,
         userName: localStorage.getItem('gyanhub_user') || 'M.K. Maurya',
         pin: localStorage.getItem('gyanhub_pin') || '',
         history: priorHistory
@@ -822,8 +1088,8 @@
 
       callBackend('chat', { payload })
         .then(rawReply => {
-          const tb = document.getElementById('typingBubble');
-          if (tb) tb.remove();
+          const ld = document.getElementById('shimmerLoaderCard');
+          if (ld) ld.remove();
 
           const regex = /\[SUGGESTIONS\]([\s\S]*?)\[\/SUGGESTIONS\]/i;
           const match = (rawReply || '').match(regex);
@@ -834,45 +1100,13 @@
           if (activeAssistant.id === ast.id) renderChatMessages(ast, p);
         })
         .catch(err => {
-          const tb = document.getElementById('typingBubble');
-          if (tb) tb.remove();
+          const ld = document.getElementById('shimmerLoaderCard');
+          if (ld) ld.remove();
           showToast('त्रुटि: ' + err.message);
         });
     }
 
-    function handleFileSelect(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX = 1024;
-          let w = img.width, h = img.height;
-          if (w > h && w > MAX) { h = Math.round((h * MAX) / w); w = MAX; }
-          else if (h > MAX) { w = Math.round((w * MAX) / h); h = MAX; }
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-          pendingImage = { mimeType: 'image/jpeg', base64: dataUrl.split(',')[1], dataUrl, name: file.name };
-          document.getElementById('attachmentThumb').src = dataUrl;
-          document.getElementById('attachmentName').textContent = file.name;
-          document.getElementById('attachmentPreview').classList.remove('hidden');
-          updatePrimaryActionBtn();
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    }
-
-    function removeAttachment() {
-      pendingImage = null;
-      document.getElementById('attachmentPreview').classList.add('hidden');
-      updatePrimaryActionBtn();
-    }
-
+    // Auth & Utilities
     function checkLogin() {
       const name = localStorage.getItem('gyanhub_user');
       const pin = localStorage.getItem('gyanhub_pin');
@@ -929,7 +1163,7 @@
       const txt = list.map(m => `[${new Date(m.timestamp).toLocaleString()}] ${m.role === 'user' ? 'आप' : formatDisplayName(activeAssistant)}:\n${m.text}`).join('\n\n---\n\n');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
-      a.download = `${formatDisplayName(activeAssistant).replace(/\s+/g, '_')}_Chat.txt`;
+      a.download = `Saarthi_${formatDisplayName(activeAssistant).replace(/\s+/g, '_')}.txt`;
       a.click();
       document.getElementById('headerDropdown').classList.add('hidden');
     }
@@ -964,7 +1198,7 @@
       const t = document.getElementById('toast');
       document.getElementById('toastMessage').textContent = msg;
       t.classList.remove('opacity-0');
-      setTimeout(() => t.classList.add('opacity-0'), 2500);
+      setTimeout(() => t.classList.add('opacity-0'), 2600);
     }
 
     function scrollToBottom() {
