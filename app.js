@@ -43,10 +43,11 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 })();
 
 let deferredInstallPrompt = null;
+function isStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
 function isAppAlreadyInstalled() {
-  return window.matchMedia('(display-mode: standalone)').matches ||
-         window.navigator.standalone === true ||
-         localStorage.getItem('saarthi_installed') === 'true';
+  return isStandaloneMode() || localStorage.getItem('saarthi_installed') === 'true';
 }
 
 function updateInstallMenuState() {
@@ -98,14 +99,27 @@ function triggerInstallApp() {
 }
 
 // =========================================================
-// 2. Sticky Header Viewport Lock (Mobile Keyboard Safe)
+// 2. Sticky Header + Chrome Browser Keyboard Clearance Fix
 // =========================================================
 function syncViewportHeight() {
   const shell = document.getElementById('appShell');
+  const inputWrap = document.getElementById('messageInput')?.closest('.wa-wallpaper');
   if (!shell) return;
+
   if (window.visualViewport) {
-    shell.style.height = window.visualViewport.height + 'px';
+    const vvHeight = window.visualViewport.height;
+    const isKeyboardOpen = vvHeight < window.innerHeight * 0.82;
+    shell.style.height = vvHeight + 'px';
     shell.style.top = window.visualViewport.offsetTop + 'px';
+
+    // Extra breathing space above Chrome keyboard bar so input box never gets clipped
+    if (inputWrap) {
+      if (isKeyboardOpen && !isStandaloneMode()) {
+        inputWrap.style.paddingBottom = '18px';
+      } else {
+        inputWrap.style.paddingBottom = '12px';
+      }
+    }
   } else {
     shell.style.height = window.innerHeight + 'px';
   }
@@ -113,8 +127,8 @@ function syncViewportHeight() {
 }
 
 function handleInputFocus() {
-  setTimeout(syncViewportHeight, 120);
-  setTimeout(syncViewportHeight, 350);
+  setTimeout(syncViewportHeight, 100);
+  setTimeout(syncViewportHeight, 320);
 }
 
 if (window.visualViewport) {
@@ -296,6 +310,11 @@ function renderSidebar() {
   lucide.createIcons();
 }
 
+// Per-Assistant Persistent Mode Memory
+function getSavedModeKey(astId) {
+  return 'saarthi_saved_mode_' + (astId || 'ACU').toUpperCase();
+}
+
 function selectAssistant(id) {
   const ast = allAssistants.find(a => a.id === id) || allAssistants[0];
   if (!ast) return;
@@ -316,12 +335,18 @@ function selectAssistant(id) {
   document.getElementById('messageInput').placeholder = ast.placeholder || 'अपना प्रश्न लिखें...';
   setConnectionUI(true, ast.subtitle);
 
+  // Restore last selected mode for this specific assistant
   const astModes = allModes.filter(m => m.assistantId === ast.id);
-  activeModeId = astModes.length > 0 ? astModes[0].modeId : 'DEFAULT';
+  const rememberedMode = localStorage.getItem(getSavedModeKey(ast.id));
+  if (rememberedMode && astModes.some(m => m.modeId === rememberedMode)) {
+    activeModeId = rememberedMode;
+  } else {
+    activeModeId = astModes.length > 0 ? astModes[0].modeId : 'DEFAULT';
+  }
 
   renderSidebar();
   renderModesBar(astModes);
-  renderChatMessages(ast, p);
+  renderChatMessages(ast, p, false);
   updatePrimaryActionBtn();
 
   const sidebar = document.getElementById('sidebar');
@@ -342,10 +367,13 @@ function renderModesBar(modesList) {
 
 function selectMode(modeId) {
   activeModeId = modeId;
+  if (activeAssistant) {
+    localStorage.setItem(getSavedModeKey(activeAssistant.id), modeId);
+  }
   const astModes = allModes.filter(m => m.assistantId === activeAssistant.id);
   renderModesBar(astModes);
   const mObj = astModes.find(m => m.modeId === modeId);
-  if (mObj) showToast('मोड: ' + mObj.label.replace('(Default)', '').trim());
+  if (mObj) showToast('मोड सेव किया गया: ' + mObj.label.replace('(Default)', '').trim());
 }
 
 function getStorageKey(astId) { return 'gyanhub_30d_' + (astId || 'ACU').toUpperCase(); }
@@ -366,7 +394,10 @@ function saveMessage(astId, role, text, modeLabel, suggestions = []) {
   localStorage.setItem(getStorageKey(astId), JSON.stringify(list.slice(-150)));
 }
 
-function renderChatMessages(ast, p) {
+// =========================================================
+// 4. Render Chat + Format-Safe Word-by-Word Typewriter Reveal
+// =========================================================
+function renderChatMessages(ast, p, animateLastBot = false) {
   const wrapper = document.getElementById('messagesWrapper');
   const history = loadHistory(ast.id);
 
@@ -397,20 +428,24 @@ function renderChatMessages(ast, p) {
       const isLast = idx === history.length - 1;
       const sugs = isLast ? (msg.suggestions || []) : [];
       const msgId = 'msg_' + msg.timestamp + '_' + idx;
+      const shouldTypewrite = isLast && animateLastBot;
+
       html += `
         <div class="flex justify-start msg-animate">
           <div class="max-w-[92%] sm:max-w-[82%] rounded-2xl rounded-tl-xs px-4 py-3 text-slate-800 bubble-elevated-bot">
             ${msg.modeLabel ? `<div class="mb-1.5 inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-semibold">${escapeHtml(msg.modeLabel)}</div>` : ''}
-            <div id="${msgId}" class="ai-rich-body leading-relaxed whitespace-pre-wrap select-text" style="font-size:${currentFontSize}px">${formatRichText(msg.text)}</div>
-            ${sugs.length > 0 ? `
-              <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5">
-                ${sugs.map(q => `<button type="button" onclick="sendSuggested('${escapeJs(q)}')" class="text-left text-xs px-3 py-1.5 rounded-xl border ${p.chipBg} font-medium hover:opacity-85">${escapeHtml(q)}</button>`).join('')}
-              </div>` : ''}
-            <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-slate-400">
-              <button type="button" onclick="copyMsg('${msgId}')" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 text-slate-600 text-xs font-medium">
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>कॉपी करें</span>
-              </button>
-              <span class="text-[11px]">${timeStr}</span>
+            <div id="${msgId}" class="ai-rich-body leading-relaxed whitespace-pre-wrap select-text" style="font-size:${currentFontSize}px">${shouldTypewrite ? '' : formatRichText(msg.text)}</div>
+            <div id="${msgId}_footer" class="${shouldTypewrite ? 'hidden' : ''}">
+              ${sugs.length > 0 ? `
+                <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5">
+                  ${sugs.map(q => `<button type="button" onclick="sendSuggested('${escapeJs(q)}')" class="text-left text-xs px-3 py-1.5 rounded-xl border ${p.chipBg} font-medium hover:opacity-85">${escapeHtml(q)}</button>`).join('')}
+                </div>` : ''}
+              <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-slate-400">
+                <button type="button" onclick="copyMsg('${msgId}')" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 text-slate-600 text-xs font-medium">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>कॉपी करें</span>
+                </button>
+                <span class="text-[11px]">${timeStr}</span>
+              </div>
             </div>
           </div>
         </div>`;
@@ -419,7 +454,50 @@ function renderChatMessages(ast, p) {
 
   wrapper.innerHTML = html;
   lucide.createIcons();
-  scrollToBottom();
+
+  if (animateLastBot && history.length > 0) {
+    const lastIdx = history.length - 1;
+    const lastMsg = history[lastIdx];
+    const targetId = 'msg_' + lastMsg.timestamp + '_' + lastIdx;
+    streamFormattedWords(targetId, targetId + '_footer', formatRichText(lastMsg.text));
+  } else {
+    scrollToBottom();
+  }
+}
+
+// Format-Safe HTML Token Typewriter (Preserves <b>, <em>, headings without breaking tags)
+function streamFormattedWords(bodyId, footerId, fullHtml) {
+  const bodyEl = document.getElementById(bodyId);
+  const footerEl = document.getElementById(footerId);
+  if (!bodyEl) return;
+
+  // Split into HTML tags OR individual words/whitespace so tags are never sliced mid-way
+  const tokens = fullHtml.match(/(<[^>]+>|[^\s<]+|\s+)/g) || [fullHtml];
+  let idx = 0;
+  let currentHtml = "";
+
+  function step() {
+    // Reveal 2 words per frame for brisk, readable speed
+    let wordsAdded = 0;
+    while (idx < tokens.length && wordsAdded < 2) {
+      const tok = tokens[idx++];
+      currentHtml += tok;
+      if (!tok.startsWith('<') && tok.trim().length > 0) {
+        wordsAdded++;
+      }
+    }
+    bodyEl.innerHTML = currentHtml;
+    scrollToBottom();
+
+    if (idx < tokens.length) {
+      setTimeout(step, 22);
+    } else if (footerEl) {
+      footerEl.classList.remove('hidden');
+      lucide.createIcons();
+      scrollToBottom();
+    }
+  }
+  step();
 }
 
 // Emoji Tray
@@ -476,7 +554,7 @@ function handleKeyDown(e) {
 }
 
 // =========================================================
-// 4. Continuous Mic (Survives Pauses + Auto-Stops on Lock/App Switch)
+// 5. Continuous Mic (Survives Pauses + Auto-Stops on Lock/App Switch)
 // =========================================================
 function startVoiceRecording() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -533,11 +611,9 @@ function launchSpeechEngine() {
         alert('कृपया ब्राउज़र सेटिंग में माइक्रोफ़ोन की अनुमति (Allow) दें।');
         cancelVoiceRecording();
       }
-      // Ignore 'no-speech' so user can pause and think freely without Mic closing
     };
 
     recognition.onend = () => {
-      // Automatically restart listening if user hasn't clicked ✓ or ✕ and screen is active
       if (isRecordingVoice && !document.hidden) {
         setTimeout(() => {
           if (isRecordingVoice && !document.hidden) launchSpeechEngine();
@@ -549,7 +625,6 @@ function launchSpeechEngine() {
   } catch (e) {}
 }
 
-// Auto-stop Mic when screen locks or user switches apps
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && isRecordingVoice) {
     finishVoiceRecording();
@@ -600,7 +675,7 @@ function cancelVoiceRecording() {
 }
 
 // =========================================================
-// 5. Image & PDF Attachment (Max 30MB & Max 300 Pages)
+// 6. Image & PDF Attachment (Max 30MB & Max 300 Pages)
 // =========================================================
 async function handleAttachmentSelected(e, kind) {
   const file = e.target.files[0];
@@ -710,7 +785,7 @@ function removeAttachment() {
 }
 
 // =========================================================
-// 6. Send Query & Shimmer Loader
+// 7. Send Query & Shimmer Loader + Typewriter Trigger
 // =========================================================
 function sendSuggested(q) {
   document.getElementById('messageInput').value = q;
@@ -742,7 +817,7 @@ function sendChatQuery() {
   inp.style.height = 'auto';
   removeAttachment();
   updatePrimaryActionBtn();
-  renderChatMessages(ast, p);
+  renderChatMessages(ast, p, false);
 
   const wrapper = document.getElementById('messagesWrapper');
   const loaderEl = document.createElement('div');
@@ -782,7 +857,7 @@ function sendChatQuery() {
       const sugs = match ? match[1].split('\n').map(l => l.replace(/^[-*•\d.)\s]+/, '').trim()).filter(Boolean).slice(0, 2) : [];
 
       saveMessage(ast.id, 'model', cleanText, modeLabel, sugs);
-      if (activeAssistant.id === ast.id) renderChatMessages(ast, p);
+      if (activeAssistant.id === ast.id) renderChatMessages(ast, p, true);
     })
     .catch(err => {
       const ld = document.getElementById('shimmerLoaderCard');
@@ -792,7 +867,7 @@ function sendChatQuery() {
 }
 
 // =========================================================
-// 7. Auth & Utilities
+// 8. Auth & Utilities
 // =========================================================
 function checkLogin() {
   const name = localStorage.getItem('gyanhub_user');
@@ -840,7 +915,7 @@ function clearCurrentChat() {
   if (!activeAssistant) return;
   localStorage.removeItem(getStorageKey(activeAssistant.id));
   document.getElementById('headerDropdown').classList.add('hidden');
-  renderChatMessages(activeAssistant, getPalette(activeAssistant.id));
+  renderChatMessages(activeAssistant, getPalette(activeAssistant.id), false);
   showToast('वर्तमान चैट साफ़ की गई');
 }
 
@@ -866,7 +941,7 @@ function changeFontSize(delta) {
   currentFontSize = Math.min(24, Math.max(14, currentFontSize + delta));
   localStorage.setItem('gyanhub_font', currentFontSize);
   updateFontDisplay();
-  if (activeAssistant) renderChatMessages(activeAssistant, getPalette(activeAssistant.id));
+  if (activeAssistant) renderChatMessages(activeAssistant, getPalette(activeAssistant.id), false);
 }
 
 function updateFontDisplay() {
