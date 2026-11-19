@@ -7,10 +7,9 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Saarthi - आपका ज्ञान एवं उपचार मार्गदर्शक</title>
+  <title>Saarthi - ज्ञान एवं उपचार मार्गदर्शक</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PDF.js for client-side PDF page count validation (Max 300 pages) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,329 +25,234 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   </script>
-
-  <style>
-    :root {
-      --header-bg: #075e54;
-      --accent-bg: #00a884;
-      --chat-canvas: #e8e2d7;
-      --user-bubble: #dcf8c6;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      height: 100dvh;
-      overflow: hidden;
-      background-color: var(--chat-canvas);
-      font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
-    }
-
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-    /* Shaded WhatsApp Wallpaper so elevated bubbles stand out clearly */
-    .wa-wallpaper {
-      background-color: var(--chat-canvas);
-      background-image:
-        radial-gradient(rgba(7, 94, 84, 0.07) 1px, transparent 1px),
-        linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.05) 100%);
-      background-size: 22px 22px, 100% 100%;
-      transition: background-color 0.25s ease;
-    }
-
-    /* Elevated 3D-like Chat Bubbles */
-    .bubble-elevated-bot {
-      background: #ffffff;
-      box-shadow: 0 3px 10px -2px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.9);
-    }
-
-    .bubble-elevated-user {
-      background-color: var(--user-bubble);
-      box-shadow: 0 3px 10px -2px rgba(7, 94, 84, 0.16), 0 1px 3px rgba(15, 23, 42, 0.08);
-      border: 1px solid rgba(0, 0, 0, 0.04);
-    }
-
-    @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .msg-animate { animation: fadeSlideUp 0.22s ease-out forwards; }
-
-    /* Light Shimmer Animation while AI is preparing reply */
-    @keyframes shimmerSweep {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
-    .shimmer-line {
-      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-      background-size: 200% 100%;
-      animation: shimmerSweep 1.4s infinite linear;
-      border-radius: 6px;
-    }
-
-    .ai-rich-body b, .ai-rich-body strong { font-weight: 700; color: #0f172a; }
-    .ai-rich-body em {
-      display: block;
-      margin-top: 8px;
-      padding-top: 6px;
-      border-top: 1px dashed #cbd5e1;
-      font-size: 0.82em;
-      color: #475569;
-      font-style: italic;
-    }
-    .ai-heading {
-      display: block;
-      font-weight: 700;
-      font-size: 1.04em;
-      color: #0f172a;
-      margin-top: 8px;
-      margin-bottom: 2px;
-    }
-
-    @keyframes waveDance {
-      0%, 100% { height: 6px; }
-      50% { height: 22px; }
-    }
-    .wave-bar-active {
-      width: 3.5px;
-      border-radius: 9999px;
-      animation: waveDance 0.7s infinite ease-in-out;
-    }
-  </style>
+  <link rel="stylesheet" href="./style.css">
 </head>
-<body class="fixed inset-0 w-full h-[100dvh] flex overflow-hidden antialiased select-none sm:select-auto">
+<body class="antialiased select-none sm:select-auto">
 
-  <!-- Mobile Backdrop -->
-  <div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 hidden lg:hidden"></div>
+  <div id="appShell">
+    <!-- Mobile Backdrop -->
+    <div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 hidden lg:hidden"></div>
 
-  <!-- LEFT SIDEBAR -->
-  <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
-    
-    <!-- Saarthi Brand Header with Custom SVG Logo -->
-    <div class="h-16 px-5 border-b border-slate-100 flex items-center justify-between shrink-0">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm shrink-0" style="background: linear-gradient(135deg, #075e54 0%, #0d9488 100%);">
-          <!-- Custom Saarthi Chariot-Wheel / Compass SVG Icon -->
-          <svg class="w-6 h-6 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="9"/>
-            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
-            <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/>
-          </svg>
+    <!-- LEFT SIDEBAR -->
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
+      
+      <!-- Saarthi Brand Header -->
+      <div class="h-16 px-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm shrink-0" style="background: linear-gradient(135deg, #075e54 0%, #0d9488 100%);">
+            <svg class="w-6 h-6 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+              <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-slate-900 text-lg leading-tight tracking-tight">Saarthi</h1>
+            <p class="text-[11px] text-slate-500 font-medium">ज्ञान एवं उपचार मार्गदर्शक</p>
+          </div>
         </div>
-        <div>
-          <h1 class="font-bold text-slate-900 text-lg leading-tight tracking-tight">Saarthi</h1>
-          <p class="text-[11px] text-slate-500 font-medium">ज्ञान एवं उपचार मार्गदर्शक</p>
-        </div>
-      </div>
-      <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-    </div>
-
-    <!-- Assistants List -->
-    <div class="flex-1 overflow-y-auto no-scrollbar p-3.5 space-y-4">
-      <div>
-        <div class="px-2 mb-2 flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">आपके विशेषज्ञ</span>
-          <span id="assistantCountBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">0</span>
-        </div>
-        <div id="assistantList" class="space-y-1.5"></div>
-      </div>
-    </div>
-
-    <!-- Backend Status & User Footer -->
-    <div class="p-3.5 border-t border-slate-100 bg-slate-50/80 shrink-0">
-      <div class="flex items-center justify-between mb-2.5 px-1">
-        <div class="flex items-center gap-2">
-          <span class="relative flex h-2.5 w-2.5">
-            <span id="syncPingDot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span id="syncSolidDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-          </span>
-          <span id="backendStatusText" class="text-xs font-medium text-slate-600">Connecting...</span>
-        </div>
-        <button onclick="syncBackendModes()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
-          <i data-lucide="refresh-cw" id="syncIcon" class="w-3.5 h-3.5"></i>
-          <span>रिफ्रेश</span>
+        <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-slate-200/80">
-        <div id="userInitialAvatar" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0">म</div>
-        <div class="min-w-0 flex-1">
-          <p id="sidebarUserName" class="text-xs font-semibold text-slate-800 truncate">M.K. Maurya</p>
-          <p class="text-[11px] text-slate-400 truncate">सक्रिय सदस्य</p>
+
+      <!-- Assistants List -->
+      <div class="flex-1 overflow-y-auto no-scrollbar p-3.5 space-y-4">
+        <div>
+          <div class="px-2 mb-2 flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">आपके विशेषज्ञ</span>
+            <span id="assistantCountBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">0</span>
+          </div>
+          <div id="assistantList" class="space-y-1.5"></div>
         </div>
       </div>
-    </div>
-  </aside>
 
-  <!-- MAIN WORKSPACE -->
-  <main class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden relative">
-    
-    <!-- FILLED COLORED HEADER -->
-    <header id="mainAppHeader" class="text-white z-20 shrink-0 shadow-md transition-colors duration-300" style="background-color: var(--header-bg);">
-      <div class="py-2.5 px-3 lg:px-6 flex items-center justify-between gap-2.5">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-1 text-white/90 hover:bg-white/15 rounded-xl">
-            <i data-lucide="menu" class="w-5 h-5"></i>
+      <!-- Backend Status & User Footer -->
+      <div class="p-3.5 border-t border-slate-100 bg-slate-50/80 shrink-0">
+        <div class="flex items-center justify-between mb-2.5 px-1">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span id="syncPingDot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span id="syncSolidDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+            </span>
+            <span id="backendStatusText" class="text-xs font-medium text-slate-600">Connecting...</span>
+          </div>
+          <button onclick="syncBackendModes()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
+            <i data-lucide="refresh-cw" id="syncIcon" class="w-3.5 h-3.5"></i>
+            <span>रिफ्रेश</span>
           </button>
-          <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 bg-white/20 border border-white/25">
-            <i data-lucide="sprout" class="w-5 h-5"></i>
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <h2 id="headerTitle" class="font-bold text-white text-base sm:text-lg truncate">Acupressure Assistant</h2>
-              <span id="headerConnBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-amber-400/20 text-amber-200 border border-amber-300/30 shrink-0">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-300"></span> कनेक्ट हो रहा है...
-              </span>
-            </div>
-            <p id="headerSubtitle" class="text-xs text-white/85 truncate"></p>
-          </div>
         </div>
-
-        <!-- Right Menu -->
-        <div class="flex items-center gap-1.5 shrink-0">
-          <div class="hidden sm:flex items-center bg-black/20 rounded-xl p-1 border border-white/15">
-            <button onclick="changeFontSize(-1)" class="px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/15 rounded-lg">A-</button>
-            <span id="fontSizeDisplay" class="px-1.5 text-[11px] font-medium text-white/90">17px</span>
-            <button onclick="changeFontSize(1)" class="px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/15 rounded-lg">A+</button>
-          </div>
-
-          <div class="relative">
-            <button onclick="toggleHeaderMenu()" id="headerMenuBtn" class="p-2 text-white hover:bg-white/15 rounded-full">
-              <i data-lucide="more-vertical" class="w-5 h-5"></i>
-            </button>
-            <div id="headerDropdown" class="hidden absolute right-0 mt-2 w-60 bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
-              <div class="sm:hidden px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                <span class="text-xs font-medium text-slate-600">अक्षर आकार</span>
-                <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
-                  <button onclick="changeFontSize(-1)" class="px-2 py-1 text-xs font-semibold">A-</button>
-                  <span id="fontSizeDisplayMobile" class="text-xs px-1">17</span>
-                  <button onclick="changeFontSize(1)" class="px-2 py-1 text-xs font-semibold">A+</button>
-                </div>
-              </div>
-              <!-- Single Subtle App Install Option -->
-              <button id="menuInstallBtn" onclick="triggerInstallApp()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center justify-between">
-                <span class="flex items-center gap-2.5">
-                  <i data-lucide="smartphone" class="w-4 h-4 text-slate-500"></i>
-                  <span id="menuInstallText">ऐप इंस्टॉल करें</span>
-                </span>
-                <span id="menuInstallTag" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">App</span>
-              </button>
-              <button onclick="clearCurrentChat()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
-                <i data-lucide="trash-2" class="w-4 h-4 text-slate-400"></i>
-                <span>वर्तमान चैट साफ़ करें</span>
-              </button>
-              <button onclick="exportChat()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
-                <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
-                <span>चैट डाउनलोड करें</span>
-              </button>
-              <div class="my-1 border-t border-slate-100"></div>
-              <button onclick="logoutUser()" class="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2.5">
-                <i data-lucide="log-out" class="w-4 h-4"></i>
-                <span>लॉगआउट करें</span>
-              </button>
-            </div>
+        <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-slate-200/80">
+          <div id="userInitialAvatar" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0">म</div>
+          <div class="min-w-0 flex-1">
+            <p id="sidebarUserName" class="text-xs font-semibold text-slate-800 truncate">M.K. Maurya</p>
+            <p class="text-[11px] text-slate-400 truncate">सक्रिय सदस्य</p>
           </div>
         </div>
       </div>
+    </aside>
 
-      <!-- Mode Pills Sub-Bar -->
-      <div class="px-3 lg:px-6 py-2 bg-black/15 border-t border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
-        <span class="text-[11px] font-semibold text-white/75 shrink-0 flex items-center gap-1">
-          <i data-lucide="sliders-horizontal" class="w-3 h-3"></i> मोड:
-        </span>
-        <div id="modePillsContainer" class="flex items-center gap-1.5"></div>
-      </div>
-    </header>
-
-    <!-- ELEVATED WHATSAPP CHAT CANVAS -->
-    <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto no-scrollbar wa-wallpaper px-3.5 lg:px-8 py-4 scroll-smooth">
-      <div id="messagesWrapper" class="max-w-3xl mx-auto space-y-4 pb-2"></div>
-    </div>
-
-    <!-- WHATSAPP-STYLE BOTTOM INPUT BAR (Emoji Left | Text | Image + Doc Right | Mic/Send) -->
-    <div class="wa-wallpaper px-2.5 lg:px-8 pb-3 pt-1.5 shrink-0 z-20 relative">
-      <div class="max-w-3xl mx-auto">
-        
-        <!-- Quick Emoji / Greeting Tray -->
-        <div id="emojiPickerTray" class="hidden mb-2 p-2 bg-white rounded-2xl shadow-lg border border-slate-200 flex items-center justify-around gap-1">
-          <button type="button" onclick="insertQuickEmoji('🙏 प्रणाम! ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🙏</button>
-          <button type="button" onclick="insertQuickEmoji('🌿 ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🌿</button>
-          <button type="button" onclick="insertQuickEmoji('🧭 ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🧭</button>
-          <button type="button" onclick="insertQuickEmoji('👍 ठीक है ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">👍</button>
-          <button type="button" onclick="insertQuickEmoji('धन्यवाद 🙏')" class="text-xs font-semibold px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700">धन्यवाद</button>
-        </div>
-
-        <!-- Attached Image / PDF Preview Strip -->
-        <div id="attachmentPreview" class="hidden mb-2 p-2.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+      
+      <!-- STICKY FILLED COLORED HEADER (Never hides when mobile keyboard opens) -->
+      <header id="mainAppHeader" class="text-white z-30 shrink-0 shadow-md transition-colors duration-300" style="background-color: var(--header-bg);">
+        <div class="py-2.5 px-3 lg:px-6 flex items-center justify-between gap-2.5">
           <div class="flex items-center gap-2.5 min-w-0">
-            <img id="attachmentThumb" src="" class="hidden w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0" alt="Preview">
-            <div id="attachmentDocIcon" class="hidden w-10 h-10 rounded-xl bg-rose-50 text-rose-600 items-center justify-center shrink-0">
-              <i data-lucide="file-text" class="w-5 h-5"></i>
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-1 text-white/90 hover:bg-white/15 rounded-xl">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 bg-white/20 border border-white/25">
+              <i data-lucide="sprout" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0">
-              <p id="attachmentName" class="text-xs font-semibold text-slate-800 truncate">file.pdf</p>
-              <p id="attachmentMeta" class="text-[11px] text-slate-500">Ready to send</p>
+              <div class="flex items-center gap-2">
+                <h2 id="headerTitle" class="font-bold text-white text-base sm:text-lg truncate">Acupressure Assistant</h2>
+                <span id="headerConnBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-amber-400/20 text-amber-200 border border-amber-300/30 shrink-0">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-300"></span> कनेक्ट हो रहा है...
+                </span>
+              </div>
+              <p id="headerSubtitle" class="text-xs text-white/85 truncate"></p>
             </div>
           </div>
-          <button type="button" onclick="removeAttachment()" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-full shrink-0">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
+
+          <!-- Right Menu -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <div class="hidden sm:flex items-center bg-black/20 rounded-xl p-1 border border-white/15">
+              <button onclick="changeFontSize(-1)" class="px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/15 rounded-lg">A-</button>
+              <span id="fontSizeDisplay" class="px-1.5 text-[11px] font-medium text-white/90">17px</span>
+              <button onclick="changeFontSize(1)" class="px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/15 rounded-lg">A+</button>
+            </div>
+
+            <div class="relative">
+              <button onclick="toggleHeaderMenu()" id="headerMenuBtn" class="p-2 text-white hover:bg-white/15 rounded-full">
+                <i data-lucide="more-vertical" class="w-5 h-5"></i>
+              </button>
+              <div id="headerDropdown" class="hidden absolute right-0 mt-2 w-60 bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
+                <div class="sm:hidden px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                  <span class="text-xs font-medium text-slate-600">अक्षर आकार</span>
+                  <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+                    <button onclick="changeFontSize(-1)" class="px-2 py-1 text-xs font-semibold">A-</button>
+                    <span id="fontSizeDisplayMobile" class="text-xs px-1">17</span>
+                    <button onclick="changeFontSize(1)" class="px-2 py-1 text-xs font-semibold">A+</button>
+                  </div>
+                </div>
+                <button id="menuInstallBtn" onclick="triggerInstallApp()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center justify-between">
+                  <span class="flex items-center gap-2.5">
+                    <i data-lucide="smartphone" class="w-4 h-4 text-slate-500"></i>
+                    <span id="menuInstallText">ऐप इंस्टॉल करें</span>
+                  </span>
+                  <span id="menuInstallTag" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">Install</span>
+                </button>
+                <button onclick="clearCurrentChat()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
+                  <i data-lucide="trash-2" class="w-4 h-4 text-slate-400"></i>
+                  <span>वर्तमान चैट साफ़ करें</span>
+                </button>
+                <button onclick="exportChat()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
+                  <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
+                  <span>चैट डाउनलोड करें</span>
+                </button>
+                <div class="my-1 border-t border-slate-100"></div>
+                <button onclick="logoutUser()" class="w-full px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2.5">
+                  <i data-lucide="log-out" class="w-4 h-4"></i>
+                  <span>लॉगआउट करें</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="flex items-end gap-2">
-          <!-- White WhatsApp Input Capsule -->
-          <div class="flex-1 flex items-center bg-white rounded-3xl px-2 py-1 shadow-md border border-black/5 min-h-[48px]">
-            
-            <!-- Left: Emoji Button (WhatsApp style) -->
-            <button type="button" id="emojiBtn" onclick="toggleEmojiTray()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full shrink-0" title="इमोजी / अभिवादन">
-              <i data-lucide="smile" class="w-5 h-5"></i>
-            </button>
+        <!-- Mode Pills Sub-Bar -->
+        <div class="px-3 lg:px-6 py-2 bg-black/15 border-t border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <span class="text-[11px] font-semibold text-white/75 shrink-0 flex items-center gap-1">
+            <i data-lucide="sliders-horizontal" class="w-3 h-3"></i> मोड:
+          </span>
+          <div id="modePillsContainer" class="flex items-center gap-1.5"></div>
+        </div>
+      </header>
 
-            <!-- Textarea -->
-            <textarea 
-              id="messageInput" 
-              rows="1" 
-              placeholder="लक्षण या समस्या यहाँ लिखें..." 
-              class="w-full bg-transparent border-0 resize-none py-2 px-1 text-slate-900 placeholder-slate-400 text-base max-h-28 leading-snug outline-none no-scrollbar select-text"
-              oninput="onInputTextChanged(this)"
-              onkeydown="handleKeyDown(event)"
-            ></textarea>
+      <!-- FLEXIBLE CHAT CANVAS (Scrolls independently when keyboard opens) -->
+      <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto no-scrollbar wa-wallpaper px-3.5 lg:px-8 py-4 scroll-smooth">
+        <div id="messagesWrapper" class="max-w-3xl mx-auto space-y-4 pb-2"></div>
+      </div>
 
-            <!-- Live Voice Wave Box (Shown while speaking) -->
-            <div id="voiceWaveBox" class="hidden flex-1 items-center justify-between gap-2 px-1.5 py-1">
-              <button type="button" onclick="cancelVoiceRecording()" class="p-1.5 rounded-full bg-rose-100 text-rose-600 shrink-0" title="रद्द करें">
-                <i data-lucide="x" class="w-4 h-4"></i>
-              </button>
-              <div id="waveBarsContainer" class="flex-1 flex items-center justify-center gap-1 h-7 overflow-hidden"></div>
-              <span id="voiceLiveLabel" class="text-xs font-semibold text-rose-600 whitespace-nowrap shrink-0">● बोलिए...</span>
-            </div>
-
-            <!-- Right Side inside Input Capsule: 1) Image Attach & 2) PDF/Doc Attach -->
-            <div id="rightAttachGroup" class="flex items-center gap-0.5 shrink-0">
-              <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleAttachmentSelected(event, 'image')">
-              <input type="file" id="docInput" accept="application/pdf,.pdf" class="hidden" onchange="handleAttachmentSelected(event, 'pdf')">
-
-              <button type="button" onclick="document.getElementById('docInput').click()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full" title="PDF फ़ाइल संलग्न करें (Max 30MB, 300 Pages)">
-                <i data-lucide="paperclip" class="w-5 h-5"></i>
-              </button>
-              <button type="button" onclick="document.getElementById('imageInput').click()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full" title="फ़ोटो / चित्र संलग्न करें (Max 30MB)">
-                <i data-lucide="camera" class="w-5 h-5"></i>
-              </button>
-            </div>
+      <!-- WHATSAPP BOTTOM INPUT BAR -->
+      <div class="wa-wallpaper px-2.5 lg:px-8 pb-3 pt-1.5 shrink-0 z-20 relative">
+        <div class="max-w-3xl mx-auto">
+          
+          <!-- Quick Emoji Tray -->
+          <div id="emojiPickerTray" class="hidden mb-2 p-2 bg-white rounded-2xl shadow-lg border border-slate-200 flex items-center justify-around gap-1">
+            <button type="button" onclick="insertQuickEmoji('🙏 प्रणाम! ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🙏</button>
+            <button type="button" onclick="insertQuickEmoji('🌿 ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🌿</button>
+            <button type="button" onclick="insertQuickEmoji('🧭 ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">🧭</button>
+            <button type="button" onclick="insertQuickEmoji('👍 ठीक है ')" class="text-lg p-1.5 hover:bg-slate-100 rounded-xl">👍</button>
+            <button type="button" onclick="insertQuickEmoji('धन्यवाद 🙏')" class="text-xs font-semibold px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700">धन्यवाद</button>
           </div>
 
-          <!-- Circular WhatsApp Mic / Send Action Button -->
-          <button type="button" id="primaryActionBtn" onclick="handlePrimaryActionClick()" class="w-12 h-12 rounded-full text-white shadow-md transition-transform active:scale-95 shrink-0 flex items-center justify-center" style="background-color: var(--accent-bg);">
-            <i data-lucide="mic" id="primaryActionIcon" class="w-5 h-5"></i>
-          </button>
+          <!-- Attached Image / PDF Preview -->
+          <div id="attachmentPreview" class="hidden mb-2 p-2.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <img id="attachmentThumb" src="" class="hidden w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0" alt="Preview">
+              <div id="attachmentDocIcon" class="hidden w-10 h-10 rounded-xl bg-rose-50 text-rose-600 items-center justify-center shrink-0">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <p id="attachmentName" class="text-xs font-semibold text-slate-800 truncate">file.pdf</p>
+                <p id="attachmentMeta" class="text-[11px] text-slate-500">Ready to send</p>
+              </div>
+            </div>
+            <button type="button" onclick="removeAttachment()" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-full shrink-0">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="flex items-end gap-2">
+            <div class="flex-1 flex items-center bg-white rounded-3xl px-2 py-1 shadow-md border border-black/5 min-h-[48px]">
+              <button type="button" id="emojiBtn" onclick="toggleEmojiTray()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full shrink-0" title="इमोजी / अभिवादन">
+                <i data-lucide="smile" class="w-5 h-5"></i>
+              </button>
+
+              <textarea 
+                id="messageInput" 
+                rows="1" 
+                placeholder="लक्षण या समस्या यहाँ लिखें..." 
+                class="w-full bg-transparent border-0 resize-none py-2 px-1 text-slate-900 placeholder-slate-400 text-base max-h-28 leading-snug outline-none no-scrollbar select-text"
+                onfocus="handleInputFocus()"
+                oninput="onInputTextChanged(this)"
+                onkeydown="handleKeyDown(event)"
+              ></textarea>
+
+              <!-- Continuous Voice Wave Box -->
+              <div id="voiceWaveBox" class="hidden flex-1 items-center justify-between gap-2 px-1.5 py-1">
+                <button type="button" onclick="cancelVoiceRecording()" class="p-1.5 rounded-full bg-rose-100 text-rose-600 shrink-0" title="रद्द करें">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+                <div id="waveBarsContainer" class="flex-1 flex items-center justify-center gap-1 h-7 overflow-hidden"></div>
+                <span id="voiceLiveLabel" class="text-xs font-semibold text-rose-600 whitespace-nowrap shrink-0">● बोलिए...</span>
+              </div>
+
+              <!-- Right Side: PDF & Image Attach -->
+              <div id="rightAttachGroup" class="flex items-center gap-0.5 shrink-0">
+                <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleAttachmentSelected(event, 'image')">
+                <input type="file" id="docInput" accept="application/pdf,.pdf" class="hidden" onchange="handleAttachmentSelected(event, 'pdf')">
+
+                <button type="button" onclick="document.getElementById('docInput').click()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full" title="PDF संलग्न करें (Max 30MB, 300 Pages)">
+                  <i data-lucide="paperclip" class="w-5 h-5"></i>
+                </button>
+                <button type="button" onclick="document.getElementById('imageInput').click()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full" title="फ़ोटो संलग्न करें (Max 30MB)">
+                  <i data-lucide="camera" class="w-5 h-5"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="button" id="primaryActionBtn" onclick="handlePrimaryActionClick()" class="w-12 h-12 rounded-full text-white shadow-md transition-transform active:scale-95 shrink-0 flex items-center justify-center" style="background-color: var(--accent-bg);">
+              <i data-lucide="mic" id="primaryActionIcon" class="w-5 h-5"></i>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  </main>
+    </main>
+  </div>
 
   <!-- PIN Auth Modal -->
   <div id="authModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
@@ -370,859 +274,6 @@
     <span id="toastMessage">संदेश कॉपी किया गया</span>
   </div>
 
-  <script>
-    // =========================================================
-    // APNA APPS SCRIPT '/exec' URL YAHAN PASTE KAREIN:
-    // =========================================================
-    const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbxOxUN1RcHShfhXOCjyRoXQO8yq_uZ2Ej6FA0TYbYibriV_EJMMdDSOG0CTJjI3vwdj/exec";
-
-    const MAX_FILE_BYTES = 30 * 1024 * 1024; // 30 MB Limit
-    const MAX_PDF_PAGES = 300;              // 300 Pages Limit
-    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-
-    // 1. Custom Saarthi App Icon & PWA Manifest Setup
-    (function setupSaarthiPWA() {
-      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#075e54"/><stop offset="100%" stop-color="#0d9488"/></linearGradient></defs>
-        <rect width="512" height="512" rx="115" fill="url(#g)"/>
-        <circle cx="256" cy="256" r="155" fill="none" stroke="#fcd34d" stroke-width="24"/>
-        <circle cx="256" cy="256" r="34" fill="#fcd34d"/>
-        <path d="M256 101v65M256 346v65M101 256h65M346 256h65M146 146l46 46M320 320l46 46M366 146l-46 46M192 320l-46 46" stroke="#fcd34d" stroke-width="20" stroke-linecap="round"/>
-      </svg>`;
-      const iconUrl = "data:image/svg+xml;base64," + btoa(iconSvg);
-
-      const appleIcon = document.createElement('link');
-      appleIcon.rel = 'apple-touch-icon';
-      appleIcon.href = iconUrl;
-      document.head.appendChild(appleIcon);
-
-      const manifest = {
-        name: "Saarthi - ज्ञान एवं उपचार मार्गदर्शक",
-        short_name: "Saarthi",
-        start_url: window.location.origin + window.location.pathname,
-        display: "standalone",
-        background_color: "#e8e2d7",
-        theme_color: "#075e54",
-        icons: [
-          { src: iconUrl, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
-          { src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
-        ]
-      };
-      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      link.href = URL.createObjectURL(manifestBlob);
-      document.head.appendChild(link);
-    })();
-
-    let deferredInstallPrompt = null;
-    function isAppAlreadyInstalled() {
-      return window.matchMedia('(display-mode: standalone)').matches ||
-             window.navigator.standalone === true ||
-             localStorage.getItem('saarthi_installed') === 'true';
-    }
-
-    function updateInstallMenuState() {
-      const txtEl = document.getElementById('menuInstallText');
-      const tagEl = document.getElementById('menuInstallTag');
-      if (!txtEl || !tagEl) return;
-      if (isAppAlreadyInstalled()) {
-        txtEl.textContent = 'ऐप इंस्टॉल है';
-        tagEl.textContent = 'Installed ✓';
-        tagEl.className = 'text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold';
-      } else {
-        txtEl.textContent = 'ऐप इंस्टॉल करें';
-        tagEl.textContent = 'Install';
-        tagEl.className = 'text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium';
-      }
-    }
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredInstallPrompt = e;
-      updateInstallMenuState();
-    });
-
-    window.addEventListener('appinstalled', () => {
-      localStorage.setItem('saarthi_installed', 'true');
-      deferredInstallPrompt = null;
-      updateInstallMenuState();
-      showToast('Saarthi ऐप सफलतापूर्वक इंस्टॉल हो गया!');
-    });
-
-    function triggerInstallApp() {
-      document.getElementById('headerDropdown').classList.add('hidden');
-      if (isAppAlreadyInstalled()) {
-        showToast('Saarthi ऐप पहले से आपके फ़ोन में इंस्टॉल है ✓');
-        return;
-      }
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        deferredInstallPrompt.userChoice.then((choice) => {
-          if (choice.outcome === 'accepted') {
-            localStorage.setItem('saarthi_installed', 'true');
-            updateInstallMenuState();
-          }
-          deferredInstallPrompt = null;
-        });
-      } else {
-        alert("इंस्टॉल करने के लिए ब्राउज़र के ऊपर दाईं ओर (⋮) मेनू दबाएं और 'Add to Home screen' या 'Install app' चुनें।");
-      }
-    }
-
-    // App State
-    let currentFontSize = Number(localStorage.getItem('gyanhub_font')) || 17;
-    let allAssistants = [];
-    let allModes = [];
-    let activeAssistant = null;
-    let activeModeId = null;
-    let pendingAttachment = null; // { kind: 'image'|'pdf', mimeType, base64, previewUrl, fileName, metaText }
-
-    // Voice Recognition State (No getUserMedia conflict!)
-    let isRecordingVoice = false;
-    let recognition = null;
-    let capturedVoiceText = "";
-
-    const ASSISTANT_PALETTES = {
-      'ACU': {
-        headerBg: '#075e54',
-        accentBg: '#00a884',
-        chatCanvas: '#e8e2d7',
-        userBubble: '#dcf8c6',
-        chipBg: 'bg-emerald-50 text-emerald-900 border-emerald-200',
-        sideActive: 'bg-emerald-50 border-emerald-200',
-        sideBadge: 'bg-emerald-700'
-      },
-      'VASTU': {
-        headerBg: '#9a3412',
-        accentBg: '#c2410c',
-        chatCanvas: '#f3ebe3',
-        userBubble: '#ffedd5',
-        chipBg: 'bg-amber-50 text-amber-900 border-amber-200',
-        sideActive: 'bg-amber-50 border-amber-200',
-        sideBadge: 'bg-amber-700'
-      }
-    };
-
-    function getPalette(astId) {
-      const key = (astId || 'ACU').toUpperCase();
-      return ASSISTANT_PALETTES[key] || {
-        headerBg: '#1e3a8a',
-        accentBg: '#2563eb',
-        chatCanvas: '#e6ecf2',
-        userBubble: '#dbeafe',
-        chipBg: 'bg-blue-50 text-blue-900 border-blue-200',
-        sideActive: 'bg-blue-50 border-blue-200',
-        sideBadge: 'bg-blue-700'
-      };
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      updateFontDisplay();
-      updateInstallMenuState();
-      buildWaveBars();
-      checkLogin();
-      fetchBootstrapData();
-
-      document.addEventListener('click', (e) => {
-        const dd = document.getElementById('headerDropdown');
-        const btn = document.getElementById('headerMenuBtn');
-        if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) dd.classList.add('hidden');
-      });
-    });
-
-    function buildWaveBars() {
-      const c = document.getElementById('waveBarsContainer');
-      c.innerHTML = '';
-      for (let i = 0; i < 18; i++) {
-        const b = document.createElement('div');
-        b.className = 'wave-bar-active';
-        b.style.backgroundColor = 'var(--accent-bg)';
-        b.style.animationDelay = `${(i % 5) * 0.12}s`;
-        c.appendChild(b);
-      }
-    }
-
-    function callBackend(action, dataObj) {
-      if (!APPS_SCRIPT_API_URL || APPS_SCRIPT_API_URL.includes("YAHAN_APNA")) {
-        return Promise.reject(new Error("APPS_SCRIPT_API_URL सेट नहीं है।"));
-      }
-      return fetch(APPS_SCRIPT_API_URL, {
-        method: 'POST',
-        redirect: 'follow',
-        body: JSON.stringify({ action, ...dataObj })
-      })
-      .then(r => r.json())
-      .then(res => action === 'chat' ? res.reply : res);
-    }
-
-    function setConnectionUI(connected, subtitle) {
-      const badge = document.getElementById('headerConnBadge');
-      const subEl = document.getElementById('headerSubtitle');
-      const sideText = document.getElementById('backendStatusText');
-      const pingDot = document.getElementById('syncPingDot');
-      const solidDot = document.getElementById('syncSolidDot');
-
-      if (connected) {
-        badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-400/20 text-emerald-100 border border-emerald-300/30 shrink-0';
-        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span> Connected';
-        const cleanSub = (subtitle || '').replace(/^[●\s]*ऑनलाइन\s*[•·-]?\s*/i, '').trim();
-        subEl.textContent = cleanSub;
-        sideText.textContent = 'Backend Synced';
-        pingDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
-        solidDot.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500';
-      } else {
-        badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-amber-400/20 text-amber-100 border border-amber-300/30 shrink-0';
-        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-300"></span> कनेक्ट हो रहा है...';
-        subEl.textContent = '';
-        sideText.textContent = 'Connecting...';
-      }
-    }
-
-    function fetchBootstrapData(forceClear = false) {
-      setConnectionUI(false, '');
-      callBackend(forceClear ? 'refreshCache' : 'bootstrap', {})
-        .then(res => {
-          if (res && res.success && res.assistants && res.assistants.length > 0) {
-            allAssistants = res.assistants;
-            allModes = res.modes || [];
-            renderSidebar();
-
-            const savedId = localStorage.getItem('gyanhub_active_ast');
-            const initialId = allAssistants.some(a => a.id === savedId) ? savedId : allAssistants[0].id;
-            selectAssistant(initialId);
-          }
-        })
-        .catch(err => showToast('कनेक्शन त्रुटि: ' + err.message));
-    }
-
-    function syncBackendModes() {
-      const icon = document.getElementById('syncIcon');
-      icon.classList.add('animate-spin');
-      fetchBootstrapData(true);
-      setTimeout(() => {
-        icon.classList.remove('animate-spin');
-        showToast('सभी असिस्टेंट और मोड्स सिंक हो गए हैं');
-      }, 900);
-    }
-
-    function formatDisplayName(ast) {
-      if (ast.id.toUpperCase() === 'ACU') return 'Acupressure Assistant';
-      if (ast.id.toUpperCase() === 'VASTU') return 'Vastu Assistant';
-      return ast.name;
-    }
-
-    function renderSidebar() {
-      const listEl = document.getElementById('assistantList');
-      document.getElementById('assistantCountBadge').textContent = allAssistants.length;
-
-      listEl.innerHTML = allAssistants.map(ast => {
-        const isSelected = activeAssistant && ast.id === activeAssistant.id;
-        const p = getPalette(ast.id);
-        const modeCount = allModes.filter(m => m.assistantId === ast.id).length;
-        const cleanSub = (ast.subtitle || '').replace(/^[●\s]*ऑनलाइन\s*[•·-]?\s*/i, '').trim();
-        const displayName = formatDisplayName(ast);
-
-        return `
-          <button onclick="selectAssistant('${ast.id}')" class="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all ${isSelected ? `${p.sideActive} border shadow-2xs` : 'hover:bg-slate-100 border border-transparent'}">
-            <div class="w-10 h-10 rounded-xl ${p.sideBadge} text-white flex items-center justify-center shrink-0">
-              <i data-lucide="${ast.id.toUpperCase() === 'VASTU' ? 'compass' : 'sprout'}" class="w-5 h-5"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-bold text-slate-900 truncate">${displayName}</p>
-              <p class="text-xs text-slate-500 truncate mt-0.5">${cleanSub}</p>
-              <span class="mt-1 inline-block text-[10px] font-medium px-1.5 py-0.2 bg-white text-slate-600 rounded border border-slate-200/80">${modeCount} मोड्स उपलब्ध</span>
-            </div>
-          </button>`;
-      }).join('');
-      lucide.createIcons();
-    }
-
-    function selectAssistant(id) {
-      const ast = allAssistants.find(a => a.id === id) || allAssistants[0];
-      if (!ast) return;
-      activeAssistant = ast;
-      localStorage.setItem('gyanhub_active_ast', ast.id);
-
-      const p = getPalette(ast.id);
-      document.documentElement.style.setProperty('--header-bg', p.headerBg);
-      document.documentElement.style.setProperty('--accent-bg', p.accentBg);
-      document.documentElement.style.setProperty('--chat-canvas', p.chatCanvas);
-      document.documentElement.style.setProperty('--user-bubble', p.userBubble);
-      document.getElementById('metaThemeColor').setAttribute('content', p.headerBg);
-
-      const headerAvatar = document.getElementById('headerAvatar');
-      headerAvatar.innerHTML = `<i data-lucide="${ast.id.toUpperCase() === 'VASTU' ? 'compass' : 'sprout'}" class="w-5 h-5"></i>`;
-
-      document.getElementById('headerTitle').textContent = formatDisplayName(ast);
-      document.getElementById('messageInput').placeholder = ast.placeholder || 'अपना प्रश्न लिखें...';
-      setConnectionUI(true, ast.subtitle);
-
-      const astModes = allModes.filter(m => m.assistantId === ast.id);
-      activeModeId = astModes.length > 0 ? astModes[0].modeId : 'DEFAULT';
-
-      renderSidebar();
-      renderModesBar(astModes);
-      renderChatMessages(ast, p);
-      updatePrimaryActionBtn();
-
-      const sidebar = document.getElementById('sidebar');
-      if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) toggleSidebar();
-    }
-
-    function renderModesBar(modesList) {
-      const container = document.getElementById('modePillsContainer');
-      container.innerHTML = modesList.map(m => {
-        const isActive = m.modeId === activeModeId;
-        const cleanLabel = m.label.replace('(Default)', '').trim();
-        return `
-          <button onclick="selectMode('${m.modeId}')" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all shrink-0 ${isActive ? 'bg-white text-slate-900 shadow-xs' : 'bg-white/15 text-white hover:bg-white/25'}">
-            <span>${cleanLabel}</span>
-          </button>`;
-      }).join('');
-    }
-
-    function selectMode(modeId) {
-      activeModeId = modeId;
-      const astModes = allModes.filter(m => m.assistantId === activeAssistant.id);
-      renderModesBar(astModes);
-      const mObj = astModes.find(m => m.modeId === modeId);
-      if (mObj) showToast('मोड: ' + mObj.label.replace('(Default)', '').trim());
-    }
-
-    function getStorageKey(astId) { return 'gyanhub_30d_' + (astId || 'ACU').toUpperCase(); }
-
-    function loadHistory(astId) {
-      try {
-        const raw = localStorage.getItem(getStorageKey(astId));
-        if (!raw) return [];
-        const valid = JSON.parse(raw).filter(m => (Date.now() - m.timestamp) <= THIRTY_DAYS_MS);
-        localStorage.setItem(getStorageKey(astId), JSON.stringify(valid));
-        return valid;
-      } catch (e) { return []; }
-    }
-
-    function saveMessage(astId, role, text, modeLabel, suggestions = []) {
-      const list = loadHistory(astId);
-      list.push({ role, text, modeLabel, suggestions, timestamp: Date.now() });
-      localStorage.setItem(getStorageKey(astId), JSON.stringify(list.slice(-150)));
-    }
-
-    function renderChatMessages(ast, p) {
-      const wrapper = document.getElementById('messagesWrapper');
-      const history = loadHistory(ast.id);
-
-      let html = `
-        <div class="flex justify-center">
-          <span class="px-3 py-1 rounded-lg bg-white/95 text-slate-600 text-[11px] font-semibold shadow-xs">आज</span>
-        </div>
-        <div class="flex justify-start msg-animate">
-          <div class="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tl-xs px-4 py-3 text-slate-800 bubble-elevated-bot">
-            <div style="font-size:${currentFontSize}px">${escapeHtml(ast.welcomeMsg || 'प्रणाम! मैं Saarthi, आपकी क्या सहायता कर सकता हूँ?')}</div>
-          </div>
-        </div>`;
-
-      history.forEach((msg, idx) => {
-        const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase();
-        if (msg.role === 'user') {
-          html += `
-            <div class="flex justify-end msg-animate">
-              <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs px-4 py-2.5 text-slate-900 bubble-elevated-user">
-                <p class="leading-relaxed whitespace-pre-wrap select-text" style="font-size:${currentFontSize}px">${escapeHtml(msg.text)}</p>
-                <div class="mt-1 flex items-center justify-end gap-1 text-[10.5px] text-slate-500">
-                  <span>${timeStr}</span>
-                  <i data-lucide="check-check" class="w-3.5 h-3.5 text-sky-600"></i>
-                </div>
-              </div>
-            </div>`;
-        } else {
-          const isLast = idx === history.length - 1;
-          const sugs = isLast ? (msg.suggestions || []) : [];
-          const msgId = 'msg_' + msg.timestamp + '_' + idx;
-          html += `
-            <div class="flex justify-start msg-animate">
-              <div class="max-w-[92%] sm:max-w-[82%] rounded-2xl rounded-tl-xs px-4 py-3 text-slate-800 bubble-elevated-bot">
-                ${msg.modeLabel ? `<div class="mb-1.5 inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-semibold">${escapeHtml(msg.modeLabel)}</div>` : ''}
-                <div id="${msgId}" class="ai-rich-body leading-relaxed whitespace-pre-wrap select-text" style="font-size:${currentFontSize}px">${formatRichText(msg.text)}</div>
-                ${sugs.length > 0 ? `
-                  <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5">
-                    ${sugs.map(q => `<button type="button" onclick="sendSuggested('${escapeJs(q)}')" class="text-left text-xs px-3 py-1.5 rounded-xl border ${p.chipBg} font-medium hover:opacity-85">${escapeHtml(q)}</button>`).join('')}
-                  </div>` : ''}
-                <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-slate-400">
-                  <button type="button" onclick="copyMsg('${msgId}')" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 text-slate-600 text-xs font-medium">
-                    <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>कॉपी करें</span>
-                  </button>
-                  <span class="text-[11px]">${timeStr}</span>
-                </div>
-              </div>
-            </div>`;
-        }
-      });
-
-      wrapper.innerHTML = html;
-      lucide.createIcons();
-      scrollToBottom();
-    }
-
-    // Emoji Tray
-    function toggleEmojiTray() {
-      document.getElementById('emojiPickerTray').classList.toggle('hidden');
-    }
-    function insertQuickEmoji(str) {
-      const inp = document.getElementById('messageInput');
-      inp.value = inp.value + str;
-      document.getElementById('emojiPickerTray').classList.add('hidden');
-      onInputTextChanged(inp);
-      inp.focus();
-    }
-
-    function updatePrimaryActionBtn() {
-      const btn = document.getElementById('primaryActionBtn');
-      const icon = document.getElementById('primaryActionIcon');
-
-      if (isRecordingVoice) {
-        btn.style.backgroundColor = '#16a34a';
-        btn.classList.add('animate-pulse');
-        icon.setAttribute('data-lucide', 'check');
-        lucide.createIcons();
-        return;
-      }
-
-      btn.classList.remove('animate-pulse');
-      btn.style.backgroundColor = 'var(--accent-bg)';
-      const hasText = document.getElementById('messageInput').value.trim().length > 0;
-      const hasFile = pendingAttachment !== null;
-
-      icon.setAttribute('data-lucide', (hasText || hasFile) ? 'send-horizontal' : 'mic');
-      lucide.createIcons();
-    }
-
-    function onInputTextChanged(el) {
-      el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 112) + 'px';
-      updatePrimaryActionBtn();
-    }
-
-    function handlePrimaryActionClick() {
-      if (isRecordingVoice) { finishVoiceRecording(); return; }
-      const hasText = document.getElementById('messageInput').value.trim().length > 0;
-      if (hasText || pendingAttachment) sendChatQuery();
-      else startVoiceRecording();
-    }
-
-    function handleKeyDown(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (document.getElementById('messageInput').value.trim() || pendingAttachment) sendChatQuery();
-      }
-    }
-
-    // FIXED Android Speech-to-Text (Exclusive Mic Access — No getUserMedia Conflict!)
-    function startVoiceRecording() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        showToast('इस ब्राउज़र में वॉइस टाइपिंग उपलब्ध नहीं है');
-        return;
-      }
-
-      capturedVoiceText = "";
-      isRecordingVoice = true;
-
-      document.getElementById('emojiPickerTray').classList.add('hidden');
-      document.getElementById('messageInput').classList.add('hidden');
-      document.getElementById('emojiBtn').classList.add('hidden');
-      document.getElementById('rightAttachGroup').classList.add('hidden');
-      document.getElementById('voiceWaveBox').classList.remove('hidden');
-      document.getElementById('voiceWaveBox').classList.add('flex');
-      document.getElementById('voiceLiveLabel').textContent = '● सुन रहा हूँ...';
-      updatePrimaryActionBtn();
-
-      try {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'hi-IN';
-        recognition.continuous = false;
-        recognition.interimResults = true;
-
-        recognition.onresult = (ev) => {
-          let transcript = '';
-          for (let i = 0; i < ev.results.length; i++) {
-            transcript += ev.results[i][0].transcript;
-          }
-          capturedVoiceText = transcript.trim();
-          if (capturedVoiceText) {
-            document.getElementById('voiceLiveLabel').textContent = '✓ ' + capturedVoiceText.slice(-18);
-          }
-        };
-
-        recognition.onerror = (ev) => {
-          if (ev.error === 'not-allowed') {
-            alert('कृपया ब्राउज़र सेटिंग में माइक्रोफ़ोन की अनुमति (Allow) दें।');
-          } else if (ev.error !== 'aborted') {
-            showToast('आवाज़ स्पष्ट नहीं मिली, पुनः प्रयास करें');
-          }
-          stopVoiceUI();
-          updatePrimaryActionBtn();
-        };
-
-        recognition.onend = () => {
-          // Auto-commit captured text when user finishes speaking
-          if (isRecordingVoice) {
-            finishVoiceRecording();
-          }
-        };
-
-        recognition.start();
-      } catch (e) {
-        stopVoiceUI();
-        updatePrimaryActionBtn();
-      }
-    }
-
-    function stopVoiceUI() {
-      isRecordingVoice = false;
-      document.getElementById('voiceWaveBox').classList.add('hidden');
-      document.getElementById('voiceWaveBox').classList.remove('flex');
-      document.getElementById('emojiBtn').classList.remove('hidden');
-      document.getElementById('rightAttachGroup').classList.remove('hidden');
-      document.getElementById('messageInput').classList.remove('hidden');
-    }
-
-    function finishVoiceRecording() {
-      const spoken = capturedVoiceText;
-      if (recognition) {
-        try { recognition.abort(); } catch (e) {}
-        recognition = null;
-      }
-      stopVoiceUI();
-      if (spoken) {
-        const inp = document.getElementById('messageInput');
-        inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + spoken;
-        onInputTextChanged(inp);
-        inp.focus();
-      }
-      updatePrimaryActionBtn();
-    }
-
-    function cancelVoiceRecording() {
-      capturedVoiceText = "";
-      if (recognition) {
-        try { recognition.abort(); } catch (e) {}
-        recognition = null;
-      }
-      stopVoiceUI();
-      updatePrimaryActionBtn();
-    }
-
-    // Image & PDF Attachment with 30MB Size Limit & 300-Page PDF Limit
-    async function handleAttachmentSelected(e, kind) {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (!file) return;
-
-      // 1. Check 30 MB Size Limit
-      if (file.size > MAX_FILE_BYTES) {
-        alert(`फ़ाइल का आकार ${(file.size / (1024 * 1024)).toFixed(1)} MB है। अधिकतम 30 MB तक की फ़ाइल ही संलग्न की जा सकती है।`);
-        return;
-      }
-
-      if (kind === 'image') {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const MAX_DIM = 1280;
-            let w = img.width, h = img.height;
-            if (w > h && w > MAX_DIM) { h = Math.round((h * MAX_DIM) / w); w = MAX_DIM; }
-            else if (h > MAX_DIM) { w = Math.round((w * MAX_DIM) / h); h = MAX_DIM; }
-            canvas.width = w; canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-            pendingAttachment = {
-              kind: 'image',
-              mimeType: 'image/jpeg',
-              base64: dataUrl.split(',')[1],
-              previewUrl: dataUrl,
-              fileName: file.name,
-              metaText: `Image • ${(file.size / 1024).toFixed(0)} KB`
-            };
-            showAttachmentPreview();
-          };
-          img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
-
-      } else if (kind === 'pdf') {
-        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-          alert('कृपया केवल PDF फ़ाइल चुनें।');
-          return;
-        }
-
-        showToast('PDF की जाँच हो रही है...');
-        const arrayBuffer = await file.arrayBuffer();
-
-        // 2. Check Max 300 Pages Limit using PDF.js
-        let pageCount = 0;
-        if (window.pdfjsLib) {
-          try {
-            const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
-            pageCount = pdfDoc.numPages;
-            if (pageCount > MAX_PDF_PAGES) {
-              alert(`इस PDF में ${pageCount} पेज हैं। अधिकतम ${MAX_PDF_PAGES} पेज तक की PDF ही अनुमत है।`);
-              return;
-            }
-          } catch (pdfErr) {
-            console.warn('PDF page check skipped:', pdfErr);
-          }
-        }
-
-        const reader = new FileReader();
-        reader.onload = ev => {
-          const base64Str = ev.target.result.split(',')[1];
-          const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
-          pendingAttachment = {
-            kind: 'pdf',
-            mimeType: 'application/pdf',
-            base64: base64Str,
-            previewUrl: null,
-            fileName: file.name,
-            metaText: `PDF${pageCount ? ' • ' + pageCount + ' Pages' : ''} • ${sizeMb} MB`
-          };
-          showAttachmentPreview();
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function showAttachmentPreview() {
-      if (!pendingAttachment) return;
-      const bar = document.getElementById('attachmentPreview');
-      const thumb = document.getElementById('attachmentThumb');
-      const docIcon = document.getElementById('attachmentDocIcon');
-
-      document.getElementById('attachmentName').textContent = pendingAttachment.fileName;
-      document.getElementById('attachmentMeta').textContent = pendingAttachment.metaText;
-
-      if (pendingAttachment.kind === 'image') {
-        thumb.src = pendingAttachment.previewUrl;
-        thumb.classList.remove('hidden');
-        docIcon.classList.add('hidden');
-        docIcon.classList.remove('flex');
-      } else {
-        thumb.classList.add('hidden');
-        docIcon.classList.remove('hidden');
-        docIcon.classList.add('flex');
-      }
-
-      bar.classList.remove('hidden');
-      updatePrimaryActionBtn();
-    }
-
-    function removeAttachment() {
-      pendingAttachment = null;
-      document.getElementById('attachmentPreview').classList.add('hidden');
-      updatePrimaryActionBtn();
-    }
-
-    // Send Query with Light Shimmer Loading Animation
-    function sendSuggested(q) {
-      document.getElementById('messageInput').value = q;
-      sendChatQuery();
-    }
-
-    function sendChatQuery() {
-      const inp = document.getElementById('messageInput');
-      const text = inp.value.trim();
-      const attObj = pendingAttachment;
-      if (!text && !attObj) return;
-
-      const ast = activeAssistant;
-      const p = getPalette(ast.id);
-      const mObj = allModes.find(m => m.modeId === activeModeId);
-      const modeLabel = mObj ? mObj.label.replace('(Default)', '').trim() : 'सामान्य';
-
-      const priorHistory = loadHistory(ast.id).slice(-5).map(m => ({
-        role: m.role,
-        text: m.text,
-        timeAgo: Math.max(1, Math.floor((Date.now() - m.timestamp) / 60000)) + ' mins ago'
-      }));
-
-      const prefixIcon = attObj ? (attObj.kind === 'pdf' ? `[📄 ${attObj.fileName}] ` : `[📷 चित्र] `) : '';
-      const displayUserTxt = prefixIcon + (text || 'संलग्न दस्तावेज़ का विश्लेषण करें');
-      saveMessage(ast.id, 'user', displayUserTxt, modeLabel, []);
-
-      inp.value = '';
-      inp.style.height = 'auto';
-      removeAttachment();
-      updatePrimaryActionBtn();
-      renderChatMessages(ast, p);
-
-      // Show Smooth Light Shimmer Loader Card (Prevents Freeze Feel)
-      const wrapper = document.getElementById('messagesWrapper');
-      const loaderEl = document.createElement('div');
-      loaderEl.id = 'shimmerLoaderCard';
-      loaderEl.className = 'flex justify-start msg-animate';
-      loaderEl.innerHTML = `
-        <div class="w-[82%] sm:w-[68%] rounded-2xl rounded-tl-xs p-4 bubble-elevated-bot space-y-2.5">
-          <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
-            <span class="w-2 h-2 rounded-full animate-ping" style="background-color: var(--accent-bg);"></span>
-            <span>${(mObj && mObj.thinkingText) || 'Saarthi उत्तर तैयार कर रहा है...'}</span>
-          </div>
-          <div class="h-3 w-11/12 shimmer-line"></div>
-          <div class="h-3 w-4/5 shimmer-line"></div>
-          <div class="h-3 w-3/5 shimmer-line"></div>
-        </div>`;
-      wrapper.appendChild(loaderEl);
-      scrollToBottom();
-
-      const payload = {
-        assistantId: ast.id,
-        modeId: activeModeId,
-        query: text,
-        attachmentData: attObj ? { mimeType: attObj.mimeType, base64: attObj.base64, fileName: attObj.fileName } : null,
-        userName: localStorage.getItem('gyanhub_user') || 'M.K. Maurya',
-        pin: localStorage.getItem('gyanhub_pin') || '',
-        history: priorHistory
-      };
-
-      callBackend('chat', { payload })
-        .then(rawReply => {
-          const ld = document.getElementById('shimmerLoaderCard');
-          if (ld) ld.remove();
-
-          const regex = /\[SUGGESTIONS\]([\s\S]*?)\[\/SUGGESTIONS\]/i;
-          const match = (rawReply || '').match(regex);
-          const cleanText = match ? rawReply.replace(regex, '').trim() : (rawReply || '').trim();
-          const sugs = match ? match[1].split('\n').map(l => l.replace(/^[-*•\d.)\s]+/, '').trim()).filter(Boolean).slice(0, 2) : [];
-
-          saveMessage(ast.id, 'model', cleanText, modeLabel, sugs);
-          if (activeAssistant.id === ast.id) renderChatMessages(ast, p);
-        })
-        .catch(err => {
-          const ld = document.getElementById('shimmerLoaderCard');
-          if (ld) ld.remove();
-          showToast('त्रुटि: ' + err.message);
-        });
-    }
-
-    // Auth & Utilities
-    function checkLogin() {
-      const name = localStorage.getItem('gyanhub_user');
-      const pin = localStorage.getItem('gyanhub_pin');
-      if (name) {
-        document.getElementById('sidebarUserName').textContent = name;
-        document.getElementById('userInitialAvatar').textContent = name.charAt(0).toUpperCase();
-      }
-      if (!name || !pin) {
-        document.getElementById('authModal').classList.remove('hidden');
-        document.getElementById('authModal').classList.add('flex');
-      }
-    }
-
-    function submitAuthLogin() {
-      const name = document.getElementById('authNameInput').value.trim();
-      const pin = document.getElementById('authPinInput').value.trim();
-      const errEl = document.getElementById('authErrorMsg');
-      if (!name || !pin) { errEl.textContent = 'नाम और पिन दोनों दर्ज करें'; errEl.classList.remove('hidden'); return; }
-
-      callBackend('login', { userName: name, pin, deviceInfo: navigator.userAgent })
-        .then(res => {
-          if (res && res.success) {
-            localStorage.setItem('gyanhub_user', name);
-            localStorage.setItem('gyanhub_pin', pin);
-            document.getElementById('sidebarUserName').textContent = name;
-            document.getElementById('authModal').classList.add('hidden');
-            document.getElementById('authModal').classList.remove('flex');
-          } else {
-            errEl.textContent = (res && res.message) || 'अमान्य पिन';
-            errEl.classList.remove('hidden');
-          }
-        })
-        .catch(e => { errEl.textContent = e.message; errEl.classList.remove('hidden'); });
-    }
-
-    function logoutUser() {
-      localStorage.removeItem('gyanhub_pin');
-      document.getElementById('headerDropdown').classList.add('hidden');
-      document.getElementById('authModal').classList.remove('hidden');
-      document.getElementById('authModal').classList.add('flex');
-    }
-
-    function clearCurrentChat() {
-      if (!activeAssistant) return;
-      localStorage.removeItem(getStorageKey(activeAssistant.id));
-      document.getElementById('headerDropdown').classList.add('hidden');
-      renderChatMessages(activeAssistant, getPalette(activeAssistant.id));
-      showToast('वर्तमान चैट साफ़ की गई');
-    }
-
-    function exportChat() {
-      if (!activeAssistant) return;
-      const list = loadHistory(activeAssistant.id);
-      const txt = list.map(m => `[${new Date(m.timestamp).toLocaleString()}] ${m.role === 'user' ? 'आप' : formatDisplayName(activeAssistant)}:\n${m.text}`).join('\n\n---\n\n');
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
-      a.download = `Saarthi_${formatDisplayName(activeAssistant).replace(/\s+/g, '_')}.txt`;
-      a.click();
-      document.getElementById('headerDropdown').classList.add('hidden');
-    }
-
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('-translate-x-full');
-      document.getElementById('mobileOverlay').classList.toggle('hidden');
-    }
-
-    function toggleHeaderMenu() { document.getElementById('headerDropdown').classList.toggle('hidden'); }
-
-    function changeFontSize(delta) {
-      currentFontSize = Math.min(24, Math.max(14, currentFontSize + delta));
-      localStorage.setItem('gyanhub_font', currentFontSize);
-      updateFontDisplay();
-      if (activeAssistant) renderChatMessages(activeAssistant, getPalette(activeAssistant.id));
-    }
-
-    function updateFontDisplay() {
-      document.getElementById('fontSizeDisplay').textContent = currentFontSize + 'px';
-      const mob = document.getElementById('fontSizeDisplayMobile');
-      if (mob) mob.textContent = currentFontSize;
-    }
-
-    function copyMsg(id) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      navigator.clipboard.writeText(el.innerText).then(() => showToast('उत्तर कॉपी किया गया'));
-    }
-
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      document.getElementById('toastMessage').textContent = msg;
-      t.classList.remove('opacity-0');
-      setTimeout(() => t.classList.add('opacity-0'), 2600);
-    }
-
-    function scrollToBottom() {
-      const c = document.getElementById('chatContainer');
-      c.scrollTop = c.scrollHeight;
-    }
-
-    function escapeHtml(s) {
-      return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    function escapeJs(s) {
-      return (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    }
-
-    function formatRichText(text) {
-      let safe = escapeHtml(text);
-      safe = safe.replace(/^#{1,4}\s+(.+)$/gm, '<span class="ai-heading">$1</span>');
-      safe = safe.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-      safe = safe.replace(/(?<!\w)\*([^*\n]+)\*(?!\w)/g, '<b>$1</b>');
-      safe = safe.replace(/(?<!\w)_([^_\n]+)_(?!\w)/g, '<em>$1</em>');
-      safe = safe.replace(/^[*-]\s+(.+)$/gm, '• $1');
-      return safe;
-    }
-  </script>
+  <script src="./app.js"></script>
 </body>
 </html>
