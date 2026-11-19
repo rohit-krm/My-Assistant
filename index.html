@@ -2,8 +2,13 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>GyanAI Hub - विशेषज्ञ सलाहकार प्रणाली</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" id="metaThemeColor" content="#075e54">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>MK Assistant - Acupressure & Vastu</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,18 +21,41 @@
       }
     }
   </script>
+
   <style>
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    :root {
+      --header-bg: #075e54;
+      --accent-bg: #00a884;
+      --chat-canvas: #efeae2;
+      --user-bubble: #dcf8c6;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: var(--chat-canvas);
+      font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+    }
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+    /* WhatsApp-like subtle wallpaper texture */
+    .wa-wallpaper {
+      background-color: var(--chat-canvas);
+      background-image: radial-gradient(rgba(0, 0, 0, 0.065) 0.85px, transparent 0.85px);
+      background-size: 20px 20px;
+      transition: background-color 0.25s ease;
+    }
+
     @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .msg-animate { animation: fadeSlideUp 0.22s ease-out forwards; }
+    .msg-animate { animation: fadeSlideUp 0.2s ease-out forwards; }
 
     .ai-rich-body b, .ai-rich-body strong { font-weight: 700; color: #0f172a; }
     .ai-rich-body em {
@@ -42,7 +70,7 @@
     .ai-heading {
       display: block;
       font-weight: 700;
-      font-size: 1.05em;
+      font-size: 1.04em;
       color: #0f172a;
       margin-top: 8px;
       margin-bottom: 2px;
@@ -55,22 +83,22 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 h-screen overflow-hidden flex antialiased">
+<body class="fixed inset-0 w-full h-[100dvh] flex overflow-hidden antialiased select-none sm:select-auto">
 
   <!-- Mobile Backdrop -->
-  <div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 hidden lg:hidden"></div>
+  <div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 hidden lg:hidden"></div>
 
-  <!-- LEFT SIDEBAR: Assistants Navigation -->
-  <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl lg:shadow-none">
+  <!-- LEFT SIDEBAR -->
+  <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
     
     <!-- Brand Header -->
     <div class="h-16 px-5 border-b border-slate-100 flex items-center justify-between shrink-0">
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs">
+        <div id="brandLogoBox" class="w-9 h-9 rounded-xl text-white flex items-center justify-center shadow-xs" style="background-color: var(--header-bg);">
           <i data-lucide="sparkles" class="w-5 h-5"></i>
         </div>
         <div>
-          <h1 class="font-bold text-slate-900 text-base leading-tight">GyanAI Hub</h1>
+          <h1 class="font-bold text-slate-900 text-base leading-tight">MK Assistant</h1>
           <p class="text-[11px] text-slate-500 font-medium">विशेषज्ञ सलाहकार प्रणाली</p>
         </div>
       </div>
@@ -79,19 +107,27 @@
       </button>
     </div>
 
-    <!-- Dynamic Assistants List -->
-    <div class="flex-1 overflow-y-auto p-3.5 space-y-5">
+    <!-- Assistants List -->
+    <div class="flex-1 overflow-y-auto no-scrollbar p-3.5 space-y-4">
       <div>
-        <div class="px-2.5 mb-2 flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">आपके विशेषज्ञ (Assistants)</span>
+        <div class="px-2 mb-2 flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">आपके विशेषज्ञ</span>
           <span id="assistantCountBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">0</span>
         </div>
         <div id="assistantList" class="space-y-1.5"></div>
       </div>
     </div>
 
+    <!-- Install App Banner inside Sidebar -->
+    <div id="sidebarInstallWrap" class="px-3.5 pb-2">
+      <button type="button" onclick="triggerInstallApp()" class="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-xs">
+        <i data-lucide="smartphone" class="w-4 h-4 text-emerald-400"></i>
+        <span>ऐप इंस्टॉल करें (Install App)</span>
+      </button>
+    </div>
+
     <!-- Backend Status & User Footer -->
-    <div class="p-3.5 border-t border-slate-100 bg-slate-50/70 shrink-0">
+    <div class="p-3.5 border-t border-slate-100 bg-slate-50/80 shrink-0">
       <div class="flex items-center justify-between mb-2.5 px-1">
         <div class="flex items-center gap-2">
           <span class="relative flex h-2.5 w-2.5">
@@ -100,13 +136,13 @@
           </span>
           <span id="backendStatusText" class="text-xs font-medium text-slate-600">Connecting...</span>
         </div>
-        <button onclick="syncBackendModes()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+        <button onclick="syncBackendModes()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
           <i data-lucide="refresh-cw" id="syncIcon" class="w-3.5 h-3.5"></i>
           <span>रिफ्रेश</span>
         </button>
       </div>
       <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-slate-200/80">
-        <div id="userInitialAvatar" class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">म</div>
+        <div id="userInitialAvatar" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0">म</div>
         <div class="min-w-0 flex-1">
           <p id="sidebarUserName" class="text-xs font-semibold text-slate-800 truncate">M.K. Maurya</p>
           <p class="text-[11px] text-slate-400 truncate">सक्रिय सदस्य</p>
@@ -115,43 +151,43 @@
     </div>
   </aside>
 
-  <!-- MAIN CHAT WORKSPACE -->
-  <main class="flex-1 flex flex-col min-w-0 bg-slate-50/50 relative">
+  <!-- MAIN WORKSPACE (Full Height Flex Column) -->
+  <main class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden relative">
     
-    <!-- Top Header -->
-    <header class="bg-white border-b border-slate-200 z-20 shrink-0">
-      <div class="h-16 px-4 lg:px-6 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl">
+    <!-- FILLED COLORED HEADER (Changes Dynamically per Selected Assistant) -->
+    <header id="mainAppHeader" class="text-white z-20 shrink-0 shadow-md transition-colors duration-300" style="background-color: var(--header-bg);">
+      <div class="h-15 py-2.5 px-3 lg:px-6 flex items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-1 text-white/90 hover:bg-white/15 rounded-xl">
             <i data-lucide="menu" class="w-5 h-5"></i>
           </button>
-          <div id="headerAvatar" class="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs bg-emerald-600">
+          <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 bg-white/20 border border-white/25">
             <i data-lucide="sprout" class="w-5 h-5"></i>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <h2 id="headerTitle" class="font-bold text-slate-900 text-base sm:text-lg truncate">Acupressure Expert</h2>
-              <span id="headerConnBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> कनेक्ट हो रहा है...
+              <h2 id="headerTitle" class="font-bold text-white text-base sm:text-lg truncate">Acupressure Assistant</h2>
+              <span id="headerConnBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-amber-400/20 text-amber-200 border border-amber-300/30 shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-300"></span> कनेक्ट हो रहा है...
               </span>
             </div>
-            <p id="headerSubtitle" class="text-xs text-slate-500 truncate"></p>
+            <p id="headerSubtitle" class="text-xs text-white/85 truncate"></p>
           </div>
         </div>
 
-        <!-- Right Controls -->
-        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <div class="hidden sm:flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/60">
-            <button onclick="changeFontSize(-1)" class="px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-white rounded-lg">A-</button>
-            <span id="fontSizeDisplay" class="px-1.5 text-[11px] font-medium text-slate-500">17px</span>
-            <button onclick="changeFontSize(1)" class="px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-white rounded-lg">A+</button>
+        <!-- Right Utility Controls -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div class="hidden sm:flex items-center bg-black/20 rounded-xl p-1 border border-white/15">
+            <button onclick="changeFontSize(-1)" class="px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/15 rounded-lg">A-</button>
+            <span id="fontSizeDisplay" class="px-1.5 text-[11px] font-medium text-white/90">17px</span>
+            <button onclick="changeFontSize(1)" class="px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/15 rounded-lg">A+</button>
           </div>
 
           <div class="relative">
-            <button onclick="toggleHeaderMenu()" id="headerMenuBtn" class="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl">
+            <button onclick="toggleHeaderMenu()" id="headerMenuBtn" class="p-2 text-white hover:bg-white/15 rounded-full">
               <i data-lucide="more-vertical" class="w-5 h-5"></i>
             </button>
-            <div id="headerDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-lg border border-slate-200/80 py-2 z-50">
+            <div id="headerDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
               <div class="sm:hidden px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
                 <span class="text-xs font-medium text-slate-600">अक्षर आकार</span>
                 <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
@@ -160,12 +196,16 @@
                   <button onclick="changeFontSize(1)" class="px-2 py-1 text-xs font-semibold">A+</button>
                 </div>
               </div>
+              <button onclick="triggerInstallApp()" class="w-full px-4 py-2.5 text-left text-sm text-emerald-700 font-semibold hover:bg-emerald-50 flex items-center gap-2.5">
+                <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                <span>ऐप इंस्टॉल करें (Home Screen)</span>
+              </button>
               <button onclick="clearCurrentChat()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
                 <i data-lucide="trash-2" class="w-4 h-4 text-slate-400"></i>
                 <span>वर्तमान चैट साफ़ करें</span>
               </button>
               <button onclick="exportChat()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
-                <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
+                <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
                 <span>चैट डाउनलोड करें</span>
               </button>
               <div class="my-1 border-t border-slate-100"></div>
@@ -178,60 +218,64 @@
         </div>
       </div>
 
-      <!-- Dynamic Modes Pills Bar -->
-      <div class="px-4 lg:px-6 py-2 bg-slate-50/90 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
-        <span class="text-xs font-semibold text-slate-400 shrink-0 flex items-center gap-1 mr-1">
-          <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> मोड:
+      <!-- Subtle Mode Pills Sub-Bar inside Colored Header -->
+      <div class="px-3 lg:px-6 py-2 bg-black/15 border-t border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <span class="text-[11px] font-semibold text-white/75 shrink-0 flex items-center gap-1">
+          <i data-lucide="sliders-horizontal" class="w-3 h-3"></i> मोड:
         </span>
-        <div id="modePillsContainer" class="flex items-center gap-2"></div>
+        <div id="modePillsContainer" class="flex items-center gap-1.5"></div>
       </div>
     </header>
 
-    <!-- Chat Messages Canvas -->
-    <div id="chatContainer" class="flex-1 overflow-y-auto no-scrollbar px-4 lg:px-8 py-5 scroll-smooth">
-      <div id="messagesWrapper" class="max-w-3xl mx-auto space-y-4 pb-4"></div>
+    <!-- WHATSAPP-STYLE CHAT MESSAGES CANVAS -->
+    <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto no-scrollbar wa-wallpaper px-3.5 lg:px-8 py-4 scroll-smooth">
+      <div id="messagesWrapper" class="max-w-3xl mx-auto space-y-3.5 pb-2"></div>
     </div>
 
-    <!-- Bottom Input Bar -->
-    <div class="bg-white border-t border-slate-200 px-3 lg:px-8 py-3 shrink-0">
+    <!-- FIXED CLEAN WHATSAPP BOTTOM INPUT BAR -->
+    <div class="wa-wallpaper px-2.5 lg:px-8 pb-3 pt-1.5 shrink-0 z-20">
       <div class="max-w-3xl mx-auto">
-        <!-- Image Preview Strip -->
-        <div id="attachmentPreview" class="hidden mb-2 p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+        <!-- Image Attachment Preview -->
+        <div id="attachmentPreview" class="hidden mb-2 p-2 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-xs">
           <div class="flex items-center gap-2.5">
-            <img id="attachmentThumb" src="" class="w-10 h-10 rounded-lg object-cover border border-slate-200" alt="Preview">
-            <span id="attachmentName" class="text-xs font-medium text-slate-700">image.jpg</span>
+            <img id="attachmentThumb" src="" class="w-10 h-10 rounded-xl object-cover border border-slate-200" alt="Preview">
+            <span id="attachmentName" class="text-xs font-semibold text-slate-700">image.jpg</span>
           </div>
-          <button type="button" onclick="removeAttachment()" class="p-1 text-slate-400 hover:text-rose-600 rounded-lg">
+          <button type="button" onclick="removeAttachment()" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-full">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
 
-        <div class="flex items-end gap-2 bg-slate-100/90 border border-slate-200/90 focus-within:border-slate-400 focus-within:bg-white rounded-2xl p-1.5 transition-all">
-          <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
-          
-          <button type="button" id="attachBtn" onclick="document.getElementById('fileInput').click()" class="p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl shrink-0" title="चित्र संलग्न करें">
-            <i data-lucide="paperclip" class="w-5 h-5"></i>
-          </button>
-
-          <textarea 
-            id="messageInput" 
-            rows="1" 
-            placeholder="लक्षण या समस्या यहाँ लिखें..." 
-            class="w-full bg-transparent border-0 resize-none py-2 px-1 text-slate-800 placeholder-slate-400 text-base max-h-32 leading-relaxed outline-none no-scrollbar"
-            oninput="onInputTextChanged(this)"
-            onkeydown="handleKeyDown(event)"
-          ></textarea>
-
-          <!-- Live Horizontal Audio Wave Box -->
-          <div id="voiceWaveBox" class="hidden flex-1 items-center justify-between gap-2 px-2 py-1.5">
-            <button type="button" onclick="cancelVoiceRecording()" class="p-1.5 rounded-full bg-rose-100 text-rose-600 hover:bg-rose-200 shrink-0" title="रद्द करें">
-              <i data-lucide="x" class="w-4 h-4"></i>
+        <div class="flex items-end gap-2">
+          <!-- White Rounded Input Capsule -->
+          <div class="flex-1 flex items-center bg-white rounded-3xl px-2.5 py-1 shadow-sm border border-black/5 min-h-[48px]">
+            <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+            
+            <button type="button" id="attachBtn" onclick="document.getElementById('fileInput').click()" class="p-2 text-slate-500 hover:text-slate-800 rounded-full shrink-0" title="चित्र संलग्न करें">
+              <i data-lucide="paperclip" class="w-5 h-5"></i>
             </button>
-            <div id="waveBarsContainer" class="flex-1 flex items-center justify-center gap-1 h-7 overflow-hidden"></div>
-            <span id="voiceLiveLabel" class="text-xs font-semibold text-rose-600 whitespace-nowrap shrink-0">● सुन रहा हूँ...</span>
+
+            <textarea 
+              id="messageInput" 
+              rows="1" 
+              placeholder="लक्षण या समस्या यहाँ लिखें..." 
+              class="w-full bg-transparent border-0 resize-none py-2 px-1.5 text-slate-900 placeholder-slate-400 text-base max-h-28 leading-snug outline-none no-scrollbar select-text"
+              oninput="onInputTextChanged(this)"
+              onkeydown="handleKeyDown(event)"
+            ></textarea>
+
+            <!-- Live Horizontal Audio Wave Box -->
+            <div id="voiceWaveBox" class="hidden flex-1 items-center justify-between gap-2 px-1.5 py-1">
+              <button type="button" onclick="cancelVoiceRecording()" class="p-1.5 rounded-full bg-rose-100 text-rose-600 shrink-0" title="रद्द करें">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+              <div id="waveBarsContainer" class="flex-1 flex items-center justify-center gap-1 h-7 overflow-hidden"></div>
+              <span id="voiceLiveLabel" class="text-xs font-semibold text-rose-600 whitespace-nowrap shrink-0">● सुन रहा हूँ...</span>
+            </div>
           </div>
 
-          <button type="button" id="primaryActionBtn" onclick="handlePrimaryActionClick()" class="p-2.5 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition-all shrink-0 flex items-center justify-center">
+          <!-- Circular WhatsApp Mic / Send Action Button -->
+          <button type="button" id="primaryActionBtn" onclick="handlePrimaryActionClick()" class="w-12 h-12 rounded-full text-white shadow-md transition-transform active:scale-95 shrink-0 flex items-center justify-center" style="background-color: var(--accent-bg);">
             <i data-lucide="mic" id="primaryActionIcon" class="w-5 h-5"></i>
           </button>
         </div>
@@ -240,30 +284,69 @@
   </main>
 
   <!-- PIN Auth Modal -->
-  <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+  <div id="authModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
       <div class="flex items-center gap-2 text-slate-900">
-        <i data-lucide="lock" class="w-5 h-5 text-emerald-600"></i>
+        <i data-lucide="lock" class="w-5 h-5 text-emerald-700"></i>
         <h3 class="text-lg font-bold">सुरक्षित प्रवेश</h3>
       </div>
       <p class="text-xs text-slate-500">कृपया अपना नाम और सुरक्षा एक्सेस पिन दर्ज करें।</p>
-      <input type="text" id="authNameInput" placeholder="आपका नाम (उदा. M.K. Maurya)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500">
-      <input type="password" id="authPinInput" placeholder="एक्सेस पिन (Security PIN)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-500">
+      <input type="text" id="authNameInput" placeholder="आपका नाम (उदा. M.K. Maurya)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-600 select-text">
+      <input type="password" id="authPinInput" placeholder="एक्सेस पिन (Security PIN)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-600 select-text">
       <p id="authErrorMsg" class="hidden text-xs font-semibold text-rose-600"></p>
-      <button type="button" onclick="submitAuthLogin()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">प्रवेश करें</button>
+      <button type="button" onclick="submitAuthLogin()" class="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold">प्रवेश करें</button>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center gap-2">
+  <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center gap-2">
     <span id="toastMessage">संदेश कॉपी किया गया</span>
   </div>
 
   <script>
     // =========================================================
-    // STEP 1 SE MILA APNA '/exec' URL YAHAN PASTE KAREIN:
+    // APNA APPS SCRIPT '/exec' URL YAHAN PASTE KAREIN:
     // =========================================================
     const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbxOxUN1RcHShfhXOCjyRoXQO8yq_uZ2Ej6FA0TYbYibriV_EJMMdDSOG0CTJjI3vwdj/exec";
+
+    // Dynamic PWA Manifest & Service Worker Setup (So Android Chrome allows Install App!)
+    (function setupPWA() {
+      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#075e54"/><text x="50%" y="56%" font-size="250" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="bold">MK</text></svg>`;
+      const iconUrl = "data:image/svg+xml;base64," + btoa(iconSvg);
+      const manifest = {
+        name: "MK Assistant - Acupressure & Vastu",
+        short_name: "MK Assistant",
+        start_url: window.location.href,
+        display: "standalone",
+        background_color: "#efeae2",
+        theme_color: "#075e54",
+        icons: [
+          { src: iconUrl, sizes: "192x192", type: "image/svg+xml" },
+          { src: iconUrl, sizes: "512x512", type: "image/svg+xml" }
+        ]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = URL.createObjectURL(manifestBlob);
+      document.head.appendChild(link);
+    })();
+
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+    });
+
+    function triggerInstallApp() {
+      document.getElementById('headerDropdown').classList.add('hidden');
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(() => { deferredInstallPrompt = null; });
+      } else {
+        alert("ऐप इंस्टॉल करने के लिए Chrome के ऊपर दाईं ओर (⋮) मेनू पर क्लिक करें और 'Add to Home screen' या 'Install app' चुनें।");
+      }
+    }
 
     const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
     let currentFontSize = Number(localStorage.getItem('gyanhub_font')) || 17;
@@ -281,14 +364,39 @@
     let waveAnimFrame = null;
     let capturedVoiceText = "";
 
-    const THEME_MAP = {
-      '#9a3412': { bg: 'bg-amber-700', hover: 'hover:bg-amber-800', softBg: 'bg-amber-50', softText: 'text-amber-900', border: 'border-amber-200', pill: 'bg-amber-700 text-white border-amber-700', bubble: 'bg-amber-700 text-white' },
-      '#075e54': { bg: 'bg-emerald-700', hover: 'hover:bg-emerald-800', softBg: 'bg-emerald-50', softText: 'text-emerald-900', border: 'border-emerald-200', pill: 'bg-emerald-700 text-white border-emerald-700', bubble: 'bg-emerald-700 text-white' }
+    // WhatsApp + Assistant Specific Color Palettes
+    const ASSISTANT_PALETTES = {
+      'ACU': {
+        headerBg: '#075e54',      // Classic WhatsApp Teal Green
+        accentBg: '#00a884',      // WhatsApp Send Green
+        chatCanvas: '#efeae2',    // Classic WhatsApp Wallpaper Beige
+        userBubble: '#dcf8c6',    // Classic WhatsApp Outgoing Green
+        chipBg: 'bg-emerald-50 text-emerald-900 border-emerald-200',
+        sideActive: 'bg-emerald-50 border-emerald-200',
+        sideBadge: 'bg-emerald-700'
+      },
+      'VASTU': {
+        headerBg: '#9a3412',      // Rich Vastu Terracotta / Saffron
+        accentBg: '#c2410c',      // Warm Saffron Button
+        chatCanvas: '#f6efe9',    // Warm Sandalwood Wallpaper
+        userBubble: '#ffedd5',    // Soft Warm Outgoing Bubble
+        chipBg: 'bg-amber-50 text-amber-900 border-amber-200',
+        sideActive: 'bg-amber-50 border-amber-200',
+        sideBadge: 'bg-amber-700'
+      }
     };
 
-    function getThemeClasses(hexColor) {
-      if (THEME_MAP[hexColor]) return THEME_MAP[hexColor];
-      return { bg: 'bg-indigo-600', hover: 'hover:bg-indigo-700', softBg: 'bg-indigo-50', softText: 'text-indigo-900', border: 'border-indigo-200', pill: 'bg-indigo-600 text-white border-indigo-600', bubble: 'bg-indigo-600 text-white' };
+    function getPalette(astId) {
+      const key = (astId || 'ACU').toUpperCase();
+      return ASSISTANT_PALETTES[key] || {
+        headerBg: '#1e3a8a',
+        accentBg: '#2563eb',
+        chatCanvas: '#eef2f6',
+        userBubble: '#dbeafe',
+        chipBg: 'bg-blue-50 text-blue-900 border-blue-200',
+        sideActive: 'bg-blue-50 border-blue-200',
+        sideBadge: 'bg-blue-700'
+      };
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -309,12 +417,12 @@
       c.innerHTML = '';
       for (let i = 0; i < 20; i++) {
         const b = document.createElement('div');
-        b.className = 'wave-bar bg-emerald-600';
+        b.className = 'wave-bar';
+        b.style.backgroundColor = 'var(--accent-bg)';
         c.appendChild(b);
       }
     }
 
-    // CORS-Safe Fetch to Google Apps Script
     function callBackend(action, dataObj) {
       if (!APPS_SCRIPT_API_URL || APPS_SCRIPT_API_URL.includes("YAHAN_APNA")) {
         return Promise.reject(new Error("APPS_SCRIPT_API_URL सेट नहीं है।"));
@@ -325,10 +433,7 @@
         body: JSON.stringify({ action, ...dataObj })
       })
       .then(r => r.json())
-      .then(res => {
-        if (action === 'chat') return res.reply;
-        return res;
-      });
+      .then(res => action === 'chat' ? res.reply : res);
     }
 
     function setConnectionUI(connected, subtitle) {
@@ -339,16 +444,16 @@
       const solidDot = document.getElementById('syncSolidDot');
 
       if (connected) {
-        badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
-        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Connected';
+        badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-400/20 text-emerald-100 border border-emerald-300/30 shrink-0';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span> Connected';
         const cleanSub = (subtitle || '').replace(/^[●\s]*ऑनलाइन\s*[•·-]?\s*/i, '').trim();
         subEl.textContent = cleanSub;
         sideText.textContent = 'Backend Synced';
         pingDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
         solidDot.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500';
       } else {
-        badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200';
-        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> कनेक्ट हो रहा है...';
+        badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-amber-400/20 text-amber-100 border border-amber-300/30 shrink-0';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-300"></span> कनेक्ट हो रहा है...';
         subEl.textContent = '';
         sideText.textContent = 'Connecting...';
       }
@@ -381,23 +486,30 @@
       }, 900);
     }
 
+    function formatDisplayName(ast) {
+      if (ast.id.toUpperCase() === 'ACU') return 'Acupressure Assistant';
+      if (ast.id.toUpperCase() === 'VASTU') return 'Vastu Assistant';
+      return ast.name;
+    }
+
     function renderSidebar() {
       const listEl = document.getElementById('assistantList');
       document.getElementById('assistantCountBadge').textContent = allAssistants.length;
 
       listEl.innerHTML = allAssistants.map(ast => {
         const isSelected = activeAssistant && ast.id === activeAssistant.id;
-        const t = getThemeClasses(ast.primaryColor);
+        const p = getPalette(ast.id);
         const modeCount = allModes.filter(m => m.assistantId === ast.id).length;
         const cleanSub = (ast.subtitle || '').replace(/^[●\s]*ऑनलाइन\s*[•·-]?\s*/i, '').trim();
+        const displayName = formatDisplayName(ast);
 
         return `
-          <button onclick="selectAssistant('${ast.id}')" class="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all ${isSelected ? `${t.softBg} ${t.border} border shadow-2xs` : 'hover:bg-slate-100 border border-transparent'}">
-            <div class="w-10 h-10 rounded-xl ${t.bg} text-white flex items-center justify-center shrink-0">
-              <i data-lucide="${ast.id === 'VASTU' ? 'compass' : 'sprout'}" class="w-5 h-5"></i>
+          <button onclick="selectAssistant('${ast.id}')" class="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all ${isSelected ? `${p.sideActive} border shadow-2xs` : 'hover:bg-slate-100 border border-transparent'}">
+            <div class="w-10 h-10 rounded-xl ${p.sideBadge} text-white flex items-center justify-center shrink-0">
+              <i data-lucide="${ast.id.toUpperCase() === 'VASTU' ? 'compass' : 'sprout'}" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-semibold text-slate-900 truncate">${ast.name}</p>
+              <p class="text-sm font-bold text-slate-900 truncate">${displayName}</p>
               <p class="text-xs text-slate-500 truncate mt-0.5">${cleanSub}</p>
               <span class="mt-1 inline-block text-[10px] font-medium px-1.5 py-0.2 bg-white text-slate-600 rounded border border-slate-200/80">${modeCount} मोड्स उपलब्ध</span>
             </div>
@@ -412,12 +524,17 @@
       activeAssistant = ast;
       localStorage.setItem('gyanhub_active_ast', ast.id);
 
-      const t = getThemeClasses(ast.primaryColor);
-      const headerAvatar = document.getElementById('headerAvatar');
-      headerAvatar.className = `w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs ${t.bg}`;
-      headerAvatar.innerHTML = `<i data-lucide="${ast.id === 'VASTU' ? 'compass' : 'sprout'}" class="w-5 h-5"></i>`;
+      const p = getPalette(ast.id);
+      document.documentElement.style.setProperty('--header-bg', p.headerBg);
+      document.documentElement.style.setProperty('--accent-bg', p.accentBg);
+      document.documentElement.style.setProperty('--chat-canvas', p.chatCanvas);
+      document.documentElement.style.setProperty('--user-bubble', p.userBubble);
+      document.getElementById('metaThemeColor').setAttribute('content', p.headerBg);
 
-      document.getElementById('headerTitle').textContent = ast.name;
+      const headerAvatar = document.getElementById('headerAvatar');
+      headerAvatar.innerHTML = `<i data-lucide="${ast.id.toUpperCase() === 'VASTU' ? 'compass' : 'sprout'}" class="w-5 h-5"></i>`;
+
+      document.getElementById('headerTitle').textContent = formatDisplayName(ast);
       document.getElementById('messageInput').placeholder = ast.placeholder || 'अपना प्रश्न लिखें...';
       setConnectionUI(true, ast.subtitle);
 
@@ -425,21 +542,21 @@
       activeModeId = astModes.length > 0 ? astModes[0].modeId : 'DEFAULT';
 
       renderSidebar();
-      renderModesBar(astModes, t);
-      renderChatMessages(ast, t);
+      renderModesBar(astModes);
+      renderChatMessages(ast, p);
       updatePrimaryActionBtn();
 
       const sidebar = document.getElementById('sidebar');
       if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) toggleSidebar();
     }
 
-    function renderModesBar(modesList, t) {
+    function renderModesBar(modesList) {
       const container = document.getElementById('modePillsContainer');
       container.innerHTML = modesList.map(m => {
         const isActive = m.modeId === activeModeId;
         const cleanLabel = m.label.replace('(Default)', '').trim();
         return `
-          <button onclick="selectMode('${m.modeId}')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shrink-0 ${isActive ? t.pill : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}">
+          <button onclick="selectMode('${m.modeId}')" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all shrink-0 ${isActive ? 'bg-white text-slate-900 shadow-xs' : 'bg-white/15 text-white hover:bg-white/25'}">
             <span>${cleanLabel}</span>
           </button>`;
       }).join('');
@@ -448,8 +565,7 @@
     function selectMode(modeId) {
       activeModeId = modeId;
       const astModes = allModes.filter(m => m.assistantId === activeAssistant.id);
-      const t = getThemeClasses(activeAssistant.primaryColor);
-      renderModesBar(astModes, t);
+      renderModesBar(astModes);
       const mObj = astModes.find(m => m.modeId === modeId);
       if (mObj) showToast('मोड: ' + mObj.label.replace('(Default)', '').trim());
     }
@@ -472,16 +588,16 @@
       localStorage.setItem(getStorageKey(astId), JSON.stringify(list.slice(-150)));
     }
 
-    function renderChatMessages(ast, t) {
+    function renderChatMessages(ast, p) {
       const wrapper = document.getElementById('messagesWrapper');
       const history = loadHistory(ast.id);
 
       let html = `
         <div class="flex justify-center">
-          <span class="px-3 py-1 rounded-full bg-slate-200/70 text-slate-600 text-[11px] font-medium">आज</span>
+          <span class="px-3 py-1 rounded-lg bg-white/90 text-slate-600 text-[11px] font-semibold shadow-2xs">आज</span>
         </div>
         <div class="flex justify-start msg-animate">
-          <div class="max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-tl-xs p-4 bg-white border border-slate-200/80 text-slate-800 shadow-2xs">
+          <div class="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tl-xs px-4 py-3 bg-white text-slate-800 shadow-xs">
             <div style="font-size:${currentFontSize}px">${escapeHtml(ast.welcomeMsg || 'प्रणाम! मैं आपकी क्या सहायता कर सकता हूँ?')}</div>
           </div>
         </div>`;
@@ -491,9 +607,12 @@
         if (msg.role === 'user') {
           html += `
             <div class="flex justify-end msg-animate">
-              <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs px-4 py-3 ${t.bubble} shadow-xs">
-                <p class="leading-relaxed whitespace-pre-wrap" style="font-size:${currentFontSize}px">${escapeHtml(msg.text)}</p>
-                <div class="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80"><span>${timeStr}</span></div>
+              <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs px-4 py-2.5 text-slate-900 shadow-xs" style="background-color: var(--user-bubble);">
+                <p class="leading-relaxed whitespace-pre-wrap select-text" style="font-size:${currentFontSize}px">${escapeHtml(msg.text)}</p>
+                <div class="mt-1 flex items-center justify-end gap-1 text-[10.5px] text-slate-500">
+                  <span>${timeStr}</span>
+                  <i data-lucide="check-check" class="w-3.5 h-3.5 text-sky-600"></i>
+                </div>
               </div>
             </div>`;
         } else {
@@ -502,14 +621,14 @@
           const msgId = 'msg_' + msg.timestamp + '_' + idx;
           html += `
             <div class="flex justify-start msg-animate">
-              <div class="max-w-[92%] sm:max-w-[82%] rounded-2xl rounded-tl-xs p-4 bg-white border border-slate-200/80 text-slate-800 shadow-2xs">
-                ${msg.modeLabel ? `<div class="mb-2 inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-medium">${escapeHtml(msg.modeLabel)}</div>` : ''}
-                <div id="${msgId}" class="ai-rich-body leading-relaxed whitespace-pre-wrap" style="font-size:${currentFontSize}px">${formatRichText(msg.text)}</div>
+              <div class="max-w-[92%] sm:max-w-[82%] rounded-2xl rounded-tl-xs px-4 py-3 bg-white text-slate-800 shadow-xs">
+                ${msg.modeLabel ? `<div class="mb-1.5 inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-semibold">${escapeHtml(msg.modeLabel)}</div>` : ''}
+                <div id="${msgId}" class="ai-rich-body leading-relaxed whitespace-pre-wrap select-text" style="font-size:${currentFontSize}px">${formatRichText(msg.text)}</div>
                 ${sugs.length > 0 ? `
                   <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5">
-                    ${sugs.map(q => `<button type="button" onclick="sendSuggested('${escapeJs(q)}')" class="text-left text-xs px-3 py-1.5 rounded-xl border ${t.border} ${t.softBg} ${t.softText} font-medium hover:opacity-80">${escapeHtml(q)}</button>`).join('')}
+                    ${sugs.map(q => `<button type="button" onclick="sendSuggested('${escapeJs(q)}')" class="text-left text-xs px-3 py-1.5 rounded-xl border ${p.chipBg} font-medium hover:opacity-85">${escapeHtml(q)}</button>`).join('')}
                   </div>` : ''}
-                <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-slate-400">
+                <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-slate-400">
                   <button type="button" onclick="copyMsg('${msgId}')" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 text-slate-600 text-xs font-medium">
                     <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>कॉपी करें</span>
                   </button>
@@ -528,26 +647,27 @@
     function updatePrimaryActionBtn() {
       const btn = document.getElementById('primaryActionBtn');
       const icon = document.getElementById('primaryActionIcon');
-      const t = activeAssistant ? getThemeClasses(activeAssistant.primaryColor) : getThemeClasses('#075e54');
 
       if (isRecordingVoice) {
-        btn.className = 'p-2.5 rounded-xl text-white bg-emerald-600 animate-pulse shadow-xs shrink-0 flex items-center justify-center';
+        btn.style.backgroundColor = '#16a34a';
+        btn.classList.add('animate-pulse');
         icon.setAttribute('data-lucide', 'check');
         lucide.createIcons();
         return;
       }
 
+      btn.classList.remove('animate-pulse');
+      btn.style.backgroundColor = 'var(--accent-bg)';
       const hasText = document.getElementById('messageInput').value.trim().length > 0;
       const hasImg = pendingImage !== null;
 
-      btn.className = `p-2.5 rounded-xl text-white ${t.bg} ${t.hover} shadow-xs transition-all shrink-0 flex items-center justify-center`;
       icon.setAttribute('data-lucide', (hasText || hasImg) ? 'send-horizontal' : 'mic');
       lucide.createIcons();
     }
 
     function onInputTextChanged(el) {
       el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 128) + 'px';
+      el.style.height = Math.min(el.scrollHeight, 112) + 'px';
       updatePrimaryActionBtn();
     }
 
@@ -565,7 +685,6 @@
       }
     }
 
-    // Live Audio Wave + Speech-to-Text (Works smoothly on Vercel!)
     async function startVoiceRecording() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) { showToast('इस ब्राउज़र में वॉइस टाइपिंग उपलब्ध नहीं है'); return; }
@@ -664,7 +783,7 @@
       if (!text && !imgObj) return;
 
       const ast = activeAssistant;
-      const t = getThemeClasses(ast.primaryColor);
+      const p = getPalette(ast.id);
       const mObj = allModes.find(m => m.modeId === activeModeId);
       const modeLabel = mObj ? mObj.label.replace('(Default)', '').trim() : 'सामान्य';
 
@@ -681,13 +800,13 @@
       inp.style.height = 'auto';
       removeAttachment();
       updatePrimaryActionBtn();
-      renderChatMessages(ast, t);
+      renderChatMessages(ast, p);
 
       const wrapper = document.getElementById('messagesWrapper');
       const typingEl = document.createElement('div');
       typingEl.id = 'typingBubble';
       typingEl.className = 'flex justify-start msg-animate';
-      typingEl.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-500 italic">${(mObj && mObj.thinkingText) || '⟳ उत्तर तैयार हो रहा है...'}</div>`;
+      typingEl.innerHTML = `<div class="bg-white rounded-2xl px-4 py-3 text-xs text-slate-500 italic shadow-xs">${(mObj && mObj.thinkingText) || '⟳ उत्तर तैयार हो रहा है...'}</div>`;
       wrapper.appendChild(typingEl);
       scrollToBottom();
 
@@ -712,7 +831,7 @@
           const sugs = match ? match[1].split('\n').map(l => l.replace(/^[-*•\d.)\s]+/, '').trim()).filter(Boolean).slice(0, 2) : [];
 
           saveMessage(ast.id, 'model', cleanText, modeLabel, sugs);
-          if (activeAssistant.id === ast.id) renderChatMessages(ast, t);
+          if (activeAssistant.id === ast.id) renderChatMessages(ast, p);
         })
         .catch(err => {
           const tb = document.getElementById('typingBubble');
@@ -800,17 +919,17 @@
       if (!activeAssistant) return;
       localStorage.removeItem(getStorageKey(activeAssistant.id));
       document.getElementById('headerDropdown').classList.add('hidden');
-      renderChatMessages(activeAssistant, getThemeClasses(activeAssistant.primaryColor));
+      renderChatMessages(activeAssistant, getPalette(activeAssistant.id));
       showToast('वर्तमान चैट साफ़ की गई');
     }
 
     function exportChat() {
       if (!activeAssistant) return;
       const list = loadHistory(activeAssistant.id);
-      const txt = list.map(m => `[${new Date(m.timestamp).toLocaleString()}] ${m.role === 'user' ? 'आप' : activeAssistant.name}:\n${m.text}`).join('\n\n---\n\n');
+      const txt = list.map(m => `[${new Date(m.timestamp).toLocaleString()}] ${m.role === 'user' ? 'आप' : formatDisplayName(activeAssistant)}:\n${m.text}`).join('\n\n---\n\n');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
-      a.download = `${activeAssistant.name.replace(/\s+/g, '_')}_Chat.txt`;
+      a.download = `${formatDisplayName(activeAssistant).replace(/\s+/g, '_')}_Chat.txt`;
       a.click();
       document.getElementById('headerDropdown').classList.add('hidden');
     }
@@ -826,7 +945,7 @@
       currentFontSize = Math.min(24, Math.max(14, currentFontSize + delta));
       localStorage.setItem('gyanhub_font', currentFontSize);
       updateFontDisplay();
-      if (activeAssistant) renderChatMessages(activeAssistant, getThemeClasses(activeAssistant.primaryColor));
+      if (activeAssistant) renderChatMessages(activeAssistant, getPalette(activeAssistant.id));
     }
 
     function updateFontDisplay() {
