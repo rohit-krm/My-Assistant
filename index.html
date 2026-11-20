@@ -11,6 +11,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -83,10 +84,10 @@
           </button>
         </div>
         <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-slate-200/80">
-          <div id="userInitialAvatar" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0">म</div>
+          <div id="userInitialAvatar" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0">U</div>
           <div class="min-w-0 flex-1">
-            <p id="sidebarUserName" class="text-xs font-semibold text-slate-800 truncate">M.K. Maurya</p>
-            <p class="text-[11px] text-slate-400 truncate">सक्रिय सदस्य</p>
+            <p id="sidebarUserName" class="text-xs font-semibold text-slate-800 truncate">Guest User</p>
+            <p class="text-[11px] text-slate-400 truncate">सत्यापित सदस्य</p>
           </div>
         </div>
       </div>
@@ -95,7 +96,7 @@
     <!-- MAIN WORKSPACE -->
     <main class="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
       
-      <!-- STICKY FILLED COLORED HEADER (Never hides when mobile keyboard opens) -->
+      <!-- STICKY FILLED COLORED HEADER -->
       <header id="mainAppHeader" class="text-white z-30 shrink-0 shadow-md transition-colors duration-300" style="background-color: var(--header-bg);">
         <div class="py-2.5 px-3 lg:px-6 flex items-center justify-between gap-2.5">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -116,8 +117,8 @@
             </div>
           </div>
 
-          <!-- Right Menu -->
-          <div class="flex items-center gap-1.5 shrink-0">
+          <!-- Right Controls + Circular Gmail Profile Photo (DP) -->
+          <div class="flex items-center gap-2 shrink-0">
             <div class="hidden sm:flex items-center bg-black/20 rounded-xl p-1 border border-white/15">
               <button onclick="changeFontSize(-1)" class="px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/15 rounded-lg">A-</button>
               <span id="fontSizeDisplay" class="px-1.5 text-[11px] font-medium text-white/90">17px</span>
@@ -125,10 +126,39 @@
             </div>
 
             <div class="relative">
-              <button onclick="toggleHeaderMenu()" id="headerMenuBtn" class="p-2 text-white hover:bg-white/15 rounded-full">
-                <i data-lucide="more-vertical" class="w-5 h-5"></i>
+              <!-- Circular Gmail DP Button -->
+              <button onclick="toggleHeaderMenu()" id="headerMenuBtn" class="w-9 h-9 rounded-full overflow-hidden border-2 border-white/80 shadow-xs flex items-center justify-center bg-white/20 text-white font-bold text-sm hover:scale-105 transition-transform" title="प्रोफ़ाइल और क्रेडिट्स">
+                <img id="headerUserDpImg" src="" alt="DP" class="hidden w-full h-full object-cover">
+                <span id="headerUserDpFallback">U</span>
               </button>
-              <div id="headerDropdown" class="hidden absolute right-0 mt-2 w-60 bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
+
+              <!-- Personalized Profile & Credit Card Dropdown -->
+              <div id="headerDropdown" class="hidden absolute right-0 mt-2 w-68 bg-white text-slate-800 rounded-2xl shadow-2xl border border-slate-200 py-2.5 z-50">
+                <div class="px-4 pb-3 border-b border-slate-100">
+                  <div class="flex items-center gap-2.5">
+                    <img id="menuUserDpImg" src="" alt="DP" class="hidden w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0">
+                    <div class="min-w-0 flex-1">
+                      <p id="menuUserName" class="text-sm font-bold text-slate-900 truncate">Guest User</p>
+                      <p id="menuUserEmail" class="text-[11px] text-slate-500 truncate">Not signed in</p>
+                    </div>
+                  </div>
+
+                  <!-- Live Credit Meter (x used out of y + Bonus) -->
+                  <div class="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                    <div class="flex items-center justify-between text-xs font-semibold">
+                      <span class="text-slate-600">आज के क्रेडिट्स</span>
+                      <span id="menuCreditRatio" class="text-emerald-700 font-bold">0 / 10 Used</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1.5">
+                      <div id="menuCreditBar" class="h-full bg-emerald-600 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                    </div>
+                    <div class="mt-1 flex items-center justify-between text-[10.5px] text-slate-500">
+                      <span id="menuBonusBadge" class="hidden text-amber-700 font-semibold">+0 Bonus Active</span>
+                      <span id="menuRemainingText" class="ml-auto font-medium">10 शेष</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="sm:hidden px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
                   <span class="text-xs font-medium text-slate-600">अक्षर आकार</span>
                   <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
@@ -137,6 +167,7 @@
                     <button onclick="changeFontSize(1)" class="px-2 py-1 text-xs font-semibold">A+</button>
                   </div>
                 </div>
+
                 <button id="menuInstallBtn" onclick="triggerInstallApp()" class="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center justify-between">
                   <span class="flex items-center gap-2.5">
                     <i data-lucide="smartphone" class="w-4 h-4 text-slate-500"></i>
@@ -171,7 +202,7 @@
         </div>
       </header>
 
-      <!-- FLEXIBLE CHAT CANVAS (Scrolls independently when keyboard opens) -->
+      <!-- FLEXIBLE CHAT CANVAS -->
       <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto no-scrollbar wa-wallpaper px-3.5 lg:px-8 py-4 scroll-smooth">
         <div id="messagesWrapper" class="max-w-3xl mx-auto space-y-4 pb-2"></div>
       </div>
@@ -254,18 +285,42 @@
     </main>
   </div>
 
-  <!-- PIN Auth Modal -->
-  <div id="authModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-      <div class="flex items-center gap-2 text-slate-900">
-        <i data-lucide="lock" class="w-5 h-5 text-emerald-700"></i>
-        <h3 class="text-lg font-bold">Saarthi — सुरक्षित प्रवेश</h3>
+  <!-- Mandatory Google Sign-In Gate Modal -->
+  <div id="authModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-7 shadow-2xl border border-slate-100 text-center space-y-5">
+      <div class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center shadow-md" style="background: linear-gradient(135deg, #075e54 0%, #0d9488 100%);">
+        <svg class="w-8 h-8 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+          <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/>
+        </svg>
       </div>
-      <p class="text-xs text-slate-500">कृपया अपना नाम और सुरक्षा एक्सेस पिन दर्ज करें।</p>
-      <input type="text" id="authNameInput" placeholder="आपका नाम (उदा. M.K. Maurya)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-600 select-text">
-      <input type="password" id="authPinInput" placeholder="एक्सेस पिन (Security PIN)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-600 select-text">
+      <div>
+        <h3 class="text-xl font-bold text-slate-900">Saarthi में स्वागत है</h3>
+        <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">सहायक से चर्चा करने के लिए अपने सत्यापित <b>Gmail खाते</b> से लॉगिन करें।</p>
+      </div>
+
+      <!-- Official Google Sign-In Button Container -->
+      <div class="flex justify-center py-1">
+        <div id="googleSignInBtnWrap"></div>
+      </div>
+
+      <div id="authStatusBox" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs font-medium text-amber-800 leading-relaxed"></div>
       <p id="authErrorMsg" class="hidden text-xs font-semibold text-rose-600"></p>
-      <button type="button" onclick="submitAuthLogin()" class="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold">प्रवेश करें</button>
+    </div>
+  </div>
+
+  <!-- Daily Credits Exhausted Warning Popup -->
+  <div id="creditLimitModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4">
+      <div class="w-12 h-12 mx-auto rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900">डेली क्रेडिट्स समाप्त हो गए हैं</h3>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        आपके आज के सभी चैट क्रेडिट्स (<span id="popupCreditSummary" class="font-bold text-slate-900">10 / 10</span>) उपयोग हो चुके हैं।<br>
+        अधिक क्रेडिट्स प्राप्त करने के लिए कृपया <b>एडमिन से संपर्क करें</b> या कल पुनः प्रयास करें।
+      </p>
+      <button type="button" onclick="document.getElementById('creditLimitModal').classList.add('hidden')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">ठीक है</button>
     </div>
   </div>
 
