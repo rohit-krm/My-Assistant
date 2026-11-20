@@ -112,7 +112,6 @@ function syncViewportHeight() {
     shell.style.height = vvHeight + 'px';
     shell.style.top = window.visualViewport.offsetTop + 'px';
 
-    // Extra breathing space above Chrome keyboard bar so input box never gets clipped
     if (inputWrap) {
       if (isKeyboardOpen && !isStandaloneMode()) {
         inputWrap.style.paddingBottom = '18px';
@@ -335,7 +334,6 @@ function selectAssistant(id) {
   document.getElementById('messageInput').placeholder = ast.placeholder || 'अपना प्रश्न लिखें...';
   setConnectionUI(true, ast.subtitle);
 
-  // Restore last selected mode for this specific assistant
   const astModes = allModes.filter(m => m.assistantId === ast.id);
   const rememberedMode = localStorage.getItem(getSavedModeKey(ast.id));
   if (rememberedMode && astModes.some(m => m.modeId === rememberedMode)) {
@@ -395,7 +393,7 @@ function saveMessage(astId, role, text, modeLabel, suggestions = []) {
 }
 
 // =========================================================
-// 4. Render Chat + Format-Safe Word-by-Word Typewriter Reveal
+// 4. Render Chat + Top-Locked Word-by-Word Typewriter Reveal
 // =========================================================
 function renderChatMessages(ast, p, animateLastBot = false) {
   const wrapper = document.getElementById('messagesWrapper');
@@ -465,19 +463,22 @@ function renderChatMessages(ast, p, animateLastBot = false) {
   }
 }
 
-// Format-Safe HTML Token Typewriter (Preserves <b>, <em>, headings without breaking tags)
+// Holds screen at TOP of the new reply card so initial 7-8 lines remain readable without auto-scrolling away
 function streamFormattedWords(bodyId, footerId, fullHtml) {
   const bodyEl = document.getElementById(bodyId);
   const footerEl = document.getElementById(footerId);
   if (!bodyEl) return;
 
-  // Split into HTML tags OR individual words/whitespace so tags are never sliced mid-way
+  const cardEl = bodyEl.closest('.msg-animate');
+  if (cardEl) {
+    cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   const tokens = fullHtml.match(/(<[^>]+>|[^\s<]+|\s+)/g) || [fullHtml];
   let idx = 0;
   let currentHtml = "";
 
   function step() {
-    // Reveal 2 words per frame for brisk, readable speed
     let wordsAdded = 0;
     while (idx < tokens.length && wordsAdded < 2) {
       const tok = tokens[idx++];
@@ -487,14 +488,12 @@ function streamFormattedWords(bodyId, footerId, fullHtml) {
       }
     }
     bodyEl.innerHTML = currentHtml;
-    scrollToBottom();
 
     if (idx < tokens.length) {
       setTimeout(step, 22);
     } else if (footerEl) {
       footerEl.classList.remove('hidden');
       lucide.createIcons();
-      scrollToBottom();
     }
   }
   step();
@@ -785,7 +784,7 @@ function removeAttachment() {
 }
 
 // =========================================================
-// 7. Send Query & Shimmer Loader + Typewriter Trigger
+// 7. Send Query & Shimmer Loader + High-Load Status Alert
 // =========================================================
 function sendSuggested(q) {
   document.getElementById('messageInput').value = q;
@@ -824,10 +823,10 @@ function sendChatQuery() {
   loaderEl.id = 'shimmerLoaderCard';
   loaderEl.className = 'flex justify-start msg-animate';
   loaderEl.innerHTML = `
-    <div class="w-[82%] sm:w-[68%] rounded-2xl rounded-tl-xs p-4 bubble-elevated-bot space-y-2.5">
-      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+    <div class="w-[84%] sm:w-[68%] rounded-2xl rounded-tl-xs p-4 bubble-elevated-bot space-y-2.5">
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-600">
         <span class="w-2 h-2 rounded-full animate-ping" style="background-color: var(--accent-bg);"></span>
-        <span>${(mObj && mObj.thinkingText) || 'Saarthi उत्तर तैयार कर रहा है...'}</span>
+        <span id="loaderStatusMsg">${(mObj && mObj.thinkingText) || 'Saarthi उत्तर तैयार कर रहा है...'}</span>
       </div>
       <div class="h-3 w-11/12 shimmer-line"></div>
       <div class="h-3 w-4/5 shimmer-line"></div>
@@ -835,6 +834,15 @@ function sendChatQuery() {
     </div>`;
   wrapper.appendChild(loaderEl);
   scrollToBottom();
+
+  // Inform user if response takes >6s due to server load / model switch
+  const slowLoadTimer = setTimeout(() => {
+    const msgEl = document.getElementById('loaderStatusMsg');
+    if (msgEl) {
+      msgEl.textContent = 'सर्वर पर लोड अधिक है, इसलिए थोड़ा समय लग रहा है — वैकल्पिक मॉडल से उत्तर तैयार किया जा रहा है...';
+      msgEl.classList.add('text-amber-700');
+    }
+  }, 6000);
 
   const payload = {
     assistantId: ast.id,
@@ -848,6 +856,7 @@ function sendChatQuery() {
 
   callBackend('chat', { payload })
     .then(rawReply => {
+      clearTimeout(slowLoadTimer);
       const ld = document.getElementById('shimmerLoaderCard');
       if (ld) ld.remove();
 
@@ -860,6 +869,7 @@ function sendChatQuery() {
       if (activeAssistant.id === ast.id) renderChatMessages(ast, p, true);
     })
     .catch(err => {
+      clearTimeout(slowLoadTimer);
       const ld = document.getElementById('shimmerLoaderCard');
       if (ld) ld.remove();
       showToast('त्रुटि: ' + err.message);
@@ -978,6 +988,15 @@ function escapeJs(s) {
 
 function formatRichText(text) {
   let safe = escapeHtml(text);
+  // Strip accidental full-line bolding on the final question paragraph
+  const lines = safe.split('\n');
+  if (lines.length > 2) {
+    const lastLine = lines[lines.length - 1].trim();
+    if (/^\*\*[^*]+\*\*$/.test(lastLine)) {
+      lines[lines.length - 1] = lastLine.replace(/^\*\*|\*\*$/g, '');
+      safe = lines.join('\n');
+    }
+  }
   safe = safe.replace(/^#{1,4}\s+(.+)$/gm, '<span class="ai-heading">$1</span>');
   safe = safe.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
   safe = safe.replace(/(?<!\w)\*([^*\n]+)\*(?!\w)/g, '<b>$1</b>');
