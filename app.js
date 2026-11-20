@@ -1,5 +1,5 @@
 // =========================================================
-// APNA APPS SCRIPT '/exec' URL YAHAN PASTE KAREIN:
+// APNA APPS SCRIPT '/exec' URL:
 // =========================================================
 const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbxOxUN1RcHShfhXOCjyRoXQO8yq_uZ2Ej6FA0TYbYibriV_EJMMdDSOG0CTJjI3vwdj/exec";
 
@@ -145,6 +145,7 @@ let allModes = [];
 let activeAssistant = null;
 let activeModeId = null;
 let pendingAttachment = null;
+let currentUserProfile = null; // { email, fullName, dpUrl, baseLimit, bonusCredits, totalAllowed, todayUsed, remaining }
 
 // Continuous Voice State
 let isRecordingVoice = false;
@@ -222,11 +223,167 @@ function callBackend(action, dataObj) {
     method: 'POST',
     redirect: 'follow',
     body: JSON.stringify({ action, ...dataObj })
-  })
-  .then(r => r.json())
-  .then(res => action === 'chat' ? res.reply : res);
+  }).then(r => r.json());
 }
 
+// =========================================================
+// 4. Google Sign-In, Circular DP & Live Credit Meter
+// =========================================================
+function loadSavedUserSession() {
+  try {
+    const raw = localStorage.getItem('saarthi_google_user');
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+
+function saveUserSession(userObj) {
+  currentUserProfile = userObj;
+  localStorage.setItem('saarthi_google_user', JSON.stringify(userObj));
+  renderUserProfileAndCredits(userObj);
+}
+
+function renderUserProfileAndCredits(u) {
+  if (!u) return;
+  const initial = (u.fullName || u.email || 'U').charAt(0).toUpperCase();
+
+  const headerImg = document.getElementById('headerUserDpImg');
+  const headerFb = document.getElementById('headerUserDpFallback');
+  const menuImg = document.getElementById('menuUserDpImg');
+
+  if (u.dpUrl) {
+    headerImg.src = u.dpUrl;
+    headerImg.classList.remove('hidden');
+    headerFb.classList.add('hidden');
+    menuImg.src = u.dpUrl;
+    menuImg.classList.remove('hidden');
+  } else {
+    headerImg.classList.add('hidden');
+    headerFb.textContent = initial;
+    headerFb.classList.remove('hidden');
+    menuImg.classList.add('hidden');
+  }
+
+  document.getElementById('sidebarUserName').textContent = u.fullName || u.email;
+  document.getElementById('userInitialAvatar').textContent = initial;
+  document.getElementById('menuUserName').textContent = u.fullName || 'User';
+  document.getElementById('menuUserEmail').textContent = u.email || '';
+
+  const used = Number(u.todayUsed) || 0;
+  const total = Number(u.totalAllowed) || 10;
+  const bonus = Number(u.bonusCredits) || 0;
+  const rem = Math.max(0, total - used);
+  const pct = Math.min(100, Math.round((used / Math.max(1, total)) * 100));
+
+  document.getElementById('menuCreditRatio').textContent = `${used} / ${total} Used`;
+  document.getElementById('menuRemainingText').textContent = `${rem} शेष`;
+
+  const bar = document.getElementById('menuCreditBar');
+  bar.style.width = pct + '%';
+  bar.className = `h-full rounded-full transition-all duration-300 ${rem === 0 ? 'bg-rose-600' : (rem <= 2 ? 'bg-amber-500' : 'bg-emerald-600')}`;
+
+  const bonusBadge = document.getElementById('menuBonusBadge');
+  if (bonus > 0) {
+    bonusBadge.textContent = `+${bonus} Bonus Active`;
+    bonusBadge.classList.remove('hidden');
+  } else {
+    bonusBadge.classList.add('hidden');
+  }
+}
+
+function initGoogleSignInButton(clientId) {
+  if (!clientId || clientId === "PASTE_GOOGLE_CLIENT_ID_HERE") return;
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+    setTimeout(() => initGoogleSignInButton(clientId), 400);
+    return;
+  }
+
+  google.accounts.id.initialize({
+    client_id: clientId,
+    callback: handleGoogleCredentialResponse
+  });
+
+  const btnWrap = document.getElementById('googleSignInBtnWrap');
+  if (btnWrap) {
+    btnWrap.innerHTML = '';
+    google.accounts.id.renderButton(btnWrap, {
+      theme: 'filled_blue',
+      size: 'large',
+      shape: 'pill',
+      text: 'signin_with',
+      width: 260
+    });
+  }
+}
+
+function handleGoogleCredentialResponse(response) {
+  const errEl = document.getElementById('authErrorMsg');
+  const statusBox = document.getElementById('authStatusBox');
+  errEl.classList.add('hidden');
+  statusBox.textContent = 'Google खाता सत्यापित किया जा रहा है...';
+  statusBox.classList.remove('hidden');
+
+  callBackend('googleLogin', { idToken: response.credential, deviceInfo: navigator.userAgent })
+    .then(res => {
+      statusBox.classList.add('hidden');
+      if (res && res.success && res.user) {
+        saveUserSession(res.user);
+        document.getElementById('authModal').classList.add('hidden');
+        document.getElementById('authModal').classList.remove('flex');
+        showToast(`स्वागत है, ${res.user.fullName}!`);
+      } else {
+        statusBox.textContent = (res && res.message) || 'लॉगिन अस्वीकृत।';
+        statusBox.classList.remove('hidden');
+      }
+    })
+    .catch(err => {
+      statusBox.classList.add('hidden');
+      errEl.textContent = 'त्रुटि: ' + err.message;
+      errEl.classList.remove('hidden');
+    });
+}
+
+function checkLogin() {
+  const saved = loadSavedUserSession();
+  if (!saved || !saved.email) {
+    document.getElementById('authModal').classList.remove('hidden');
+    document.getElementById('authModal').classList.add('flex');
+    return;
+  }
+
+  currentUserProfile = saved;
+  renderUserProfileAndCredits(saved);
+
+  // Sync latest credit limits, bonus credits & verify account was not revoked
+  callBackend('checkSession', { email: saved.email })
+    .then(res => {
+      if (res && res.allowed && res.credits) {
+        saveUserSession(res.credits);
+      } else if (res && (res.code === 'REVOKED' || res.code === 'PENDING')) {
+        localStorage.removeItem('saarthi_google_user');
+        currentUserProfile = null;
+        document.getElementById('authStatusBox').textContent = res.reason;
+        document.getElementById('authStatusBox').classList.remove('hidden');
+        document.getElementById('authModal').classList.remove('hidden');
+        document.getElementById('authModal').classList.add('flex');
+      }
+    })
+    .catch(() => {});
+}
+
+function logoutUser() {
+  localStorage.removeItem('saarthi_google_user');
+  currentUserProfile = null;
+  document.getElementById('headerDropdown').classList.add('hidden');
+  document.getElementById('authStatusBox').classList.add('hidden');
+  document.getElementById('authErrorMsg').classList.add('hidden');
+  document.getElementById('authModal').classList.remove('hidden');
+  document.getElementById('authModal').classList.add('flex');
+}
+
+// =========================================================
+// 5. Bootstrap, Assistant & Persistent Mode Memory
+// =========================================================
 function setConnectionUI(connected, subtitle) {
   const badge = document.getElementById('headerConnBadge');
   const subEl = document.getElementById('headerSubtitle');
@@ -254,6 +411,9 @@ function fetchBootstrapData(forceClear = false) {
   setConnectionUI(false, '');
   callBackend(forceClear ? 'refreshCache' : 'bootstrap', {})
     .then(res => {
+      if (res && res.googleClientId) {
+        initGoogleSignInButton(res.googleClientId);
+      }
       if (res && res.success && res.assistants && res.assistants.length > 0) {
         allAssistants = res.assistants;
         allModes = res.modes || [];
@@ -271,6 +431,9 @@ function syncBackendModes() {
   const icon = document.getElementById('syncIcon');
   icon.classList.add('animate-spin');
   fetchBootstrapData(true);
+  if (currentUserProfile && currentUserProfile.email) {
+    checkLogin();
+  }
   setTimeout(() => {
     icon.classList.remove('animate-spin');
     showToast('सभी असिस्टेंट और मोड्स सिंक हो गए हैं');
@@ -309,7 +472,6 @@ function renderSidebar() {
   lucide.createIcons();
 }
 
-// Per-Assistant Persistent Mode Memory
 function getSavedModeKey(astId) {
   return 'saarthi_saved_mode_' + (astId || 'ACU').toUpperCase();
 }
@@ -374,6 +536,9 @@ function selectMode(modeId) {
   if (mObj) showToast('मोड सेव किया गया: ' + mObj.label.replace('(Default)', '').trim());
 }
 
+// =========================================================
+// 6. Chat History & Top-Locked Typewriter Reveal
+// =========================================================
 function getStorageKey(astId) { return 'gyanhub_30d_' + (astId || 'ACU').toUpperCase(); }
 
 function loadHistory(astId) {
@@ -392,9 +557,6 @@ function saveMessage(astId, role, text, modeLabel, suggestions = []) {
   localStorage.setItem(getStorageKey(astId), JSON.stringify(list.slice(-150)));
 }
 
-// =========================================================
-// 4. Render Chat + Top-Locked Word-by-Word Typewriter Reveal
-// =========================================================
 function renderChatMessages(ast, p, animateLastBot = false) {
   const wrapper = document.getElementById('messagesWrapper');
   const history = loadHistory(ast.id);
@@ -463,7 +625,6 @@ function renderChatMessages(ast, p, animateLastBot = false) {
   }
 }
 
-// Holds screen at TOP of the new reply card so initial 7-8 lines remain readable without auto-scrolling away
 function streamFormattedWords(bodyId, footerId, fullHtml) {
   const bodyEl = document.getElementById(bodyId);
   const footerEl = document.getElementById(footerId);
@@ -499,7 +660,9 @@ function streamFormattedWords(bodyId, footerId, fullHtml) {
   step();
 }
 
-// Emoji Tray
+// =========================================================
+// 7. Input, Emoji, Voice & Attachments
+// =========================================================
 function toggleEmojiTray() {
   document.getElementById('emojiPickerTray').classList.toggle('hidden');
 }
@@ -552,9 +715,6 @@ function handleKeyDown(e) {
   }
 }
 
-// =========================================================
-// 5. Continuous Mic (Survives Pauses + Auto-Stops on Lock/App Switch)
-// =========================================================
 function startVoiceRecording() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -673,9 +833,6 @@ function cancelVoiceRecording() {
   updatePrimaryActionBtn();
 }
 
-// =========================================================
-// 6. Image & PDF Attachment (Max 30MB & Max 300 Pages)
-// =========================================================
 async function handleAttachmentSelected(e, kind) {
   const file = e.target.files[0];
   e.target.value = '';
@@ -784,7 +941,7 @@ function removeAttachment() {
 }
 
 // =========================================================
-// 7. Send Query & Shimmer Loader + High-Load Status Alert
+// 8. Send Query with Gmail Guard, Credit Check & Shimmer Loader
 // =========================================================
 function sendSuggested(q) {
   document.getElementById('messageInput').value = q;
@@ -792,6 +949,21 @@ function sendSuggested(q) {
 }
 
 function sendChatQuery() {
+  // Block if not signed in with Gmail
+  if (!currentUserProfile || !currentUserProfile.email) {
+    document.getElementById('authModal').classList.remove('hidden');
+    document.getElementById('authModal').classList.add('flex');
+    return;
+  }
+
+  // Block & show popup if daily + bonus credits exhausted
+  if (Number(currentUserProfile.remaining) <= 0) {
+    document.getElementById('popupCreditSummary').textContent = `${currentUserProfile.todayUsed} / ${currentUserProfile.totalAllowed}`;
+    document.getElementById('creditLimitModal').classList.remove('hidden');
+    document.getElementById('creditLimitModal').classList.add('flex');
+    return;
+  }
+
   const inp = document.getElementById('messageInput');
   const text = inp.value.trim();
   const attObj = pendingAttachment;
@@ -835,7 +1007,6 @@ function sendChatQuery() {
   wrapper.appendChild(loaderEl);
   scrollToBottom();
 
-  // Inform user if response takes >6s due to server load / model switch
   const slowLoadTimer = setTimeout(() => {
     const msgEl = document.getElementById('loaderStatusMsg');
     if (msgEl) {
@@ -849,20 +1020,41 @@ function sendChatQuery() {
     modeId: activeModeId,
     query: text,
     attachmentData: attObj ? { mimeType: attObj.mimeType, base64: attObj.base64, fileName: attObj.fileName } : null,
-    userName: localStorage.getItem('gyanhub_user') || 'M.K. Maurya',
-    pin: localStorage.getItem('gyanhub_pin') || '',
+    userEmail: currentUserProfile.email,
+    userName: currentUserProfile.fullName,
     history: priorHistory
   };
 
   callBackend('chat', { payload })
-    .then(rawReply => {
+    .then(res => {
       clearTimeout(slowLoadTimer);
       const ld = document.getElementById('shimmerLoaderCard');
       if (ld) ld.remove();
 
+      if (res && res.credits) {
+        saveUserSession(res.credits);
+      }
+
+      if (!res || !res.success) {
+        if (res && res.errorCode === 'QUOTA_EXCEEDED') {
+          const c = res.credits || currentUserProfile;
+          document.getElementById('popupCreditSummary').textContent = `${c.todayUsed} / ${c.totalAllowed}`;
+          document.getElementById('creditLimitModal').classList.remove('hidden');
+          document.getElementById('creditLimitModal').classList.add('flex');
+          return;
+        }
+        if (res && (res.errorCode === 'REVOKED' || res.errorCode === 'PENDING' || res.errorCode === 'AUTH_REQUIRED')) {
+          logoutUser();
+          document.getElementById('authStatusBox').textContent = res.reply;
+          document.getElementById('authStatusBox').classList.remove('hidden');
+          return;
+        }
+      }
+
+      const rawReply = (res && res.reply) || "उत्तर प्राप्त नहीं हो सका।";
       const regex = /\[SUGGESTIONS\]([\s\S]*?)\[\/SUGGESTIONS\]/i;
-      const match = (rawReply || '').match(regex);
-      const cleanText = match ? rawReply.replace(regex, '').trim() : (rawReply || '').trim();
+      const match = rawReply.match(regex);
+      const cleanText = match ? rawReply.replace(regex, '').trim() : rawReply.trim();
       const sugs = match ? match[1].split('\n').map(l => l.replace(/^[-*•\d.)\s]+/, '').trim()).filter(Boolean).slice(0, 2) : [];
 
       saveMessage(ast.id, 'model', cleanText, modeLabel, sugs);
@@ -877,50 +1069,8 @@ function sendChatQuery() {
 }
 
 // =========================================================
-// 8. Auth & Utilities
+// 9. UI & Formatting Helpers
 // =========================================================
-function checkLogin() {
-  const name = localStorage.getItem('gyanhub_user');
-  const pin = localStorage.getItem('gyanhub_pin');
-  if (name) {
-    document.getElementById('sidebarUserName').textContent = name;
-    document.getElementById('userInitialAvatar').textContent = name.charAt(0).toUpperCase();
-  }
-  if (!name || !pin) {
-    document.getElementById('authModal').classList.remove('hidden');
-    document.getElementById('authModal').classList.add('flex');
-  }
-}
-
-function submitAuthLogin() {
-  const name = document.getElementById('authNameInput').value.trim();
-  const pin = document.getElementById('authPinInput').value.trim();
-  const errEl = document.getElementById('authErrorMsg');
-  if (!name || !pin) { errEl.textContent = 'नाम और पिन दोनों दर्ज करें'; errEl.classList.remove('hidden'); return; }
-
-  callBackend('login', { userName: name, pin, deviceInfo: navigator.userAgent })
-    .then(res => {
-      if (res && res.success) {
-        localStorage.setItem('gyanhub_user', name);
-        localStorage.setItem('gyanhub_pin', pin);
-        document.getElementById('sidebarUserName').textContent = name;
-        document.getElementById('authModal').classList.add('hidden');
-        document.getElementById('authModal').classList.remove('flex');
-      } else {
-        errEl.textContent = (res && res.message) || 'अमान्य पिन';
-        errEl.classList.remove('hidden');
-      }
-    })
-    .catch(e => { errEl.textContent = e.message; errEl.classList.remove('hidden'); });
-}
-
-function logoutUser() {
-  localStorage.removeItem('gyanhub_pin');
-  document.getElementById('headerDropdown').classList.add('hidden');
-  document.getElementById('authModal').classList.remove('hidden');
-  document.getElementById('authModal').classList.add('flex');
-}
-
 function clearCurrentChat() {
   if (!activeAssistant) return;
   localStorage.removeItem(getStorageKey(activeAssistant.id));
@@ -988,7 +1138,6 @@ function escapeJs(s) {
 
 function formatRichText(text) {
   let safe = escapeHtml(text);
-  // Strip accidental full-line bolding on the final question paragraph
   const lines = safe.split('\n');
   if (lines.length > 2) {
     const lastLine = lines[lines.length - 1].trim();
